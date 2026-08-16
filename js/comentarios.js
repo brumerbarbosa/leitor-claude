@@ -7,50 +7,127 @@
   let reconhecimento = null;
   let microfoneAtivo = false;
   let textoBase = "";
+  let hashDocumentoAtual = "";
+  let rafPosicionamento = 0;
 
   function salvarNoNavegador() {
-    localStorage.setItem(CHAVE_COMENTARIOS, JSON.stringify(comentarios));
+    try {
+      localStorage.setItem(CHAVE_COMENTARIOS, JSON.stringify(comentarios));
+    } catch (_) {
+      app.elementos.status.textContent = "Não foi possível salvar os comentários neste navegador.";
+    }
   }
 
-  function renderizarComentarios() {
-    const el = app.elementos;
-    if (!comentarios.length) {
-      el["painel-comentarios"].style.display = "none";
-      return;
+  function hashTexto(texto) {
+    let hash = 2166136261;
+    for (let indice = 0; indice < texto.length; indice++) {
+      hash ^= texto.charCodeAt(indice);
+      hash = Math.imul(hash, 16777619);
     }
+    return `${texto.length}-${(hash >>> 0).toString(36)}`;
+  }
 
-    el["painel-comentarios"].style.display = "block";
-    el["lista-comentarios"].innerHTML = comentarios.map((comentario) => `
-      <div class="comentario-item" data-id="${comentario.id}">
-        <div class="ci-quote">${app.modulos.seguranca.escaparHtml(comentario.quote)}</div>
-        <div class="ci-texto">${app.modulos.seguranca.escaparHtml(comentario.comment)}</div>
-        <button type="button" class="ci-apagar" data-id="${comentario.id}" aria-label="Apagar comentário">✕</button>
-      </div>
-    `).join("");
+  function comentariosDoDocumentoAtual() {
+    if (!hashDocumentoAtual) return [];
+    return comentarios.filter((comentario) => comentario.documento === hashDocumentoAtual);
+  }
 
-    el["lista-comentarios"].querySelectorAll(".ci-apagar").forEach((botao) => {
-      botao.addEventListener("click", () => apagarComentario(Number(botao.dataset.id)));
+  function migrarComentariosLegados(textoDocumento) {
+    let alterou = false;
+    comentarios.forEach((comentario) => {
+      const podeMigrar = !comentario.documento || (
+        comentario.documento === hashDocumentoAtual && !comentario.ancora
+      );
+      if (!podeMigrar || !comentario.quote) return;
+
+      const quote = comentario.quote.trim();
+      const inicio = textoDocumento.indexOf(quote);
+      const repetido = inicio >= 0 && textoDocumento.indexOf(quote, inicio + 1) >= 0;
+      if (inicio < 0 || repetido) return;
+
+      comentario.documento = hashDocumentoAtual;
+      comentario.ancora = { inicio, fim: inicio + quote.length };
+      alterou = true;
     });
+
+    if (alterou) salvarNoNavegador();
+  }
+
+  function rolarDentro(container, elemento) {
+    if (!container || !elemento) return;
+    const caixaContainer = container.getBoundingClientRect();
+    const caixaElemento = elemento.getBoundingClientRect();
+    if (caixaElemento.top >= caixaContainer.top && caixaElemento.bottom <= caixaContainer.bottom) return;
+
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop + caixaElemento.top - caixaContainer.top - 18),
+      behavior: global.matchMedia?.("(prefers-reduced-motion: reduce), (max-width: 940px)").matches
+        ? "auto"
+        : "smooth"
+    });
+  }
+
+  function rolarPaginaAteNoMobile(elemento) {
+    if (!global.matchMedia?.("(max-width: 940px)").matches || !elemento) return;
+    const caixa = elemento.getBoundingClientRect();
+    const playerTopo = app.elementos["player-fixo"].hidden
+      ? global.innerHeight
+      : app.elementos["player-fixo"].getBoundingClientRect().top;
+    const margem = 12;
+    const limiteInferior = playerTopo - margem;
+    let deslocamento = 0;
+
+    if (caixa.top < margem) {
+      deslocamento = caixa.top - margem;
+    } else if (caixa.bottom > limiteInferior) {
+      deslocamento = caixa.height > limiteInferior - margem
+        ? caixa.top - margem
+        : caixa.bottom - limiteInferior;
+    }
+    if (!deslocamento) return;
+
+    global.scrollTo({
+      top: Math.max(0, global.scrollY + deslocamento),
+      behavior: global.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
+  }
+
+  function abrirComentarioNaLateral(id) {
+    app.modulos.notas?.abrirAba("comentarios");
+    const item = app.elementos["lista-comentarios"].querySelector(`.comentario-item[data-id="${id}"]`);
+    if (!item) return;
+
+    rolarDentro(app.elementos["painel-comentarios"], item);
+    rolarPaginaAteNoMobile(item);
+    item.classList.add("realce");
+    item.querySelector(".ci-abrir")?.focus({ preventScroll: true });
+    global.setTimeout(() => item.classList.remove("realce"), 1200);
   }
 
   function criarMarcacao(id) {
     const marca = document.createElement("mark");
     marca.className = "trecho-comentado";
     marca.dataset.id = String(id);
-    marca.title = "Clique para ver comentário";
-    marca.addEventListener("click", () => {
-      const comentario = document.querySelector(`.comentario-item[data-id="${id}"]`);
-      if (!comentario) return;
-      comentario.scrollIntoView({ behavior: "smooth", block: "center" });
-      comentario.style.borderColor = "#fd79a8";
-      global.setTimeout(() => {
-        comentario.style.borderColor = "#6c5ce7";
-      }, 1200);
+    marca.title = "Abrir comentário deste trecho";
+    marca.tabIndex = 0;
+    marca.setAttribute("role", "button");
+
+    const abrir = (evento) => {
+      evento.stopPropagation();
+      abrirComentarioNaLateral(id);
+    };
+    marca.addEventListener("click", abrir);
+    marca.addEventListener("keydown", (evento) => {
+      if (evento.key !== "Enter" && evento.key !== " ") return;
+      evento.preventDefault();
+      abrir(evento);
     });
     return marca;
   }
 
   function destacarTrecho(intervalo, id) {
+    if (!intervalo || intervalo.collapsed) return;
+
     if (intervalo.startContainer === intervalo.endContainer) {
       try {
         intervalo.surroundContents(criarMarcacao(id));
@@ -91,34 +168,165 @@
     });
   }
 
-  function fecharPopup() {
-    const el = app.elementos;
-    el["popup-comentario"].style.display = "none";
-    el["popup-input"].value = "";
-    el["btn-comentar-flutuante"].style.display = "";
+  function obterAncora(intervalo) {
+    const raiz = app.elementos["texto-renderizado"];
+    const prefixo = document.createRange();
+    prefixo.selectNodeContents(raiz);
+    prefixo.setEnd(intervalo.startContainer, intervalo.startOffset);
+    const inicio = prefixo.toString().length;
+    return { inicio, fim: inicio + intervalo.toString().length };
+  }
 
-    if (microfoneAtivo && reconhecimento) {
-      microfoneAtivo = false;
-      try { reconhecimento.stop(); } catch (_) { /* já estava parado */ }
-      el["btn-mic"].classList.remove("gravando");
-      el["btn-mic"].title = "Falar para transcrever";
+  function criarIntervaloPorOffsets(inicio, fim) {
+    const raiz = app.elementos["texto-renderizado"];
+    const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+    const intervalo = document.createRange();
+    let cursor = 0;
+    let inicioDefinido = false;
+    let noFinal = null;
+    let offsetFinal = 0;
+
+    while (walker.nextNode()) {
+      const no = walker.currentNode;
+      const proximo = cursor + no.length;
+
+      if (!inicioDefinido && inicio >= cursor && inicio <= proximo) {
+        intervalo.setStart(no, Math.min(no.length, inicio - cursor));
+        inicioDefinido = true;
+      }
+
+      if (inicioDefinido && fim >= cursor && fim <= proximo) {
+        noFinal = no;
+        offsetFinal = Math.min(no.length, fim - cursor);
+        break;
+      }
+      cursor = proximo;
     }
+
+    if (!inicioDefinido || !noFinal) return null;
+    intervalo.setEnd(noFinal, offsetFinal);
+    return intervalo.collapsed ? null : intervalo;
+  }
+
+  function reaplicarMarcacoes() {
+    const raiz = app.elementos["texto-renderizado"];
+    raiz.querySelectorAll("mark.trecho-comentado").forEach((marca) => marca.replaceWith(...marca.childNodes));
+    raiz.normalize();
+
+    comentarios
+      .filter((comentario) => comentario.documento === hashDocumentoAtual && comentario.ancora)
+      .forEach((comentario) => {
+        const intervalo = criarIntervaloPorOffsets(comentario.ancora.inicio, comentario.ancora.fim);
+        if (!intervalo || intervalo.toString().trim() !== comentario.quote.trim()) return;
+        destacarTrecho(intervalo, comentario.id);
+      });
+  }
+
+  function localizarMarcacao(id) {
+    return app.elementos["texto-renderizado"].querySelector(`mark[data-id="${id}"]`);
+  }
+
+  function irParaTrechoComentado(id) {
+    const marca = localizarMarcacao(id);
+    if (!marca) {
+      app.elementos.status.textContent = "Esse comentário pertence a outro texto ou o trecho foi alterado.";
+      return;
+    }
+    app.modulos.renderizador.definirAcompanhamento(false, false);
+    app.modulos.renderizador.rolarElementoNoLeitor(marca, true);
+    rolarPaginaAteNoMobile(app.elementos["leitura-workspace"]);
+    marca.focus({ preventScroll: true });
+  }
+
+  function renderizarComentarios() {
+    const el = app.elementos;
+    const comentariosVisiveis = comentariosDoDocumentoAtual();
+    el["comentarios-count"].textContent = String(comentariosVisiveis.length);
+    el["btn-copiar-comentarios"].disabled = comentariosVisiveis.length === 0;
+    el["btn-limpar-comentarios"].disabled = comentariosVisiveis.length === 0;
+
+    if (!comentariosVisiveis.length) {
+      el["lista-comentarios"].innerHTML = `
+        <div class="comentarios-vazio">
+          ${hashDocumentoAtual
+            ? "Nenhum comentário neste texto.<br>Selecione um trecho no leitor para começar."
+            : "Carregue um texto para ver e criar comentários."}
+        </div>
+      `;
+      return;
+    }
+
+    el["lista-comentarios"].innerHTML = comentariosVisiveis.map((comentario) => `
+      <div class="comentario-item" data-id="${comentario.id}">
+        <button type="button" class="ci-abrir" data-id="${comentario.id}" aria-label="Ir para o trecho: ${app.modulos.seguranca.escaparHtml(comentario.quote.slice(0, 80))}">
+          <span class="ci-quote">${app.modulos.seguranca.escaparHtml(comentario.quote)}</span>
+          <span class="ci-texto">${app.modulos.seguranca.escaparHtml(comentario.comment)}</span>
+        </button>
+        <button type="button" class="ci-apagar" data-id="${comentario.id}" aria-label="Apagar comentário sobre: ${app.modulos.seguranca.escaparHtml(comentario.quote.slice(0, 80))}">✕</button>
+      </div>
+    `).join("");
+
+    el["lista-comentarios"].querySelectorAll(".ci-abrir").forEach((botao) => {
+      botao.addEventListener("click", () => irParaTrechoComentado(Number(botao.dataset.id)));
+    });
+
+    el["lista-comentarios"].querySelectorAll(".ci-apagar").forEach((botao) => {
+      botao.addEventListener("click", (evento) => {
+        evento.stopPropagation();
+        apagarComentario(Number(botao.dataset.id));
+      });
+    });
+  }
+
+  function atualizarBotaoMicrofone() {
+    const botao = app.elementos["btn-mic"];
+    botao.classList.toggle("gravando", microfoneAtivo);
+    botao.title = microfoneAtivo ? "Parar transcrição" : "Falar para transcrever";
+    botao.setAttribute("aria-label", microfoneAtivo ? "Parar transcrição" : "Falar para transcrever");
+    botao.setAttribute("aria-pressed", String(microfoneAtivo));
+  }
+
+  function pararMicrofone() {
+    microfoneAtivo = false;
+    if (reconhecimento) {
+      try { reconhecimento.stop(); } catch (_) { /* já estava parado */ }
+    }
+    atualizarBotaoMicrofone();
+  }
+
+  function fecharPopup(devolverFoco = false) {
+    const el = app.elementos;
+    if (rafPosicionamento) {
+      global.cancelAnimationFrame(rafPosicionamento);
+      rafPosicionamento = 0;
+    }
+    el["popup-comentario"].hidden = true;
+    el["popup-input"].value = "";
+    pararMicrofone();
+    selecaoAtual = null;
+    if (devolverFoco) el["tab-comentarios"].focus();
   }
 
   function salvarComentario() {
     const texto = app.elementos["popup-input"].value.trim();
-    if (!texto || !selecaoAtual) {
-      fecharPopup();
-      return;
-    }
+    if (!texto || !selecaoAtual) return;
 
     const id = Date.now();
-    comentarios.push({ id, quote: selecaoAtual.texto, comment: texto });
+    const comentario = {
+      id,
+      quote: selecaoAtual.texto,
+      comment: texto,
+      documento: hashDocumentoAtual || hashTexto(app.elementos["texto-renderizado"].textContent || ""),
+      ancora: selecaoAtual.ancora
+    };
+
+    comentarios.push(comentario);
     salvarNoNavegador();
     renderizarComentarios();
     destacarTrecho(selecaoAtual.intervalo, id);
     fecharPopup();
     global.getSelection()?.removeAllRanges();
+    abrirComentarioNaLateral(id);
   }
 
   function apagarComentario(id) {
@@ -128,25 +336,121 @@
     app.elementos["texto-renderizado"]
       .querySelectorAll(`mark[data-id="${id}"]`)
       .forEach((marca) => marca.replaceWith(...marca.childNodes));
+    app.elementos["texto-renderizado"].normalize();
   }
 
   async function copiarComentarios() {
-    if (!comentarios.length) return;
+    const comentariosVisiveis = comentariosDoDocumentoAtual();
+    if (!comentariosVisiveis.length) return;
 
-    const linhas = comentarios.map((comentario, indice) =>
+    const linhas = comentariosVisiveis.map((comentario, indice) =>
       `[${indice + 1}] Trecho: "${comentario.quote}"\n    Comentário: ${comentario.comment}`
     ).join("\n\n");
     const texto = `Meus comentários sobre a sua última mensagem:\n\n${linhas}\n\nPor favor, considere cada comentário no contexto do trecho citado.`;
 
     try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API indisponível");
       await navigator.clipboard.writeText(texto);
       app.elementos["copiado-ok"].style.display = "inline";
       global.setTimeout(() => {
         app.elementos["copiado-ok"].style.display = "none";
       }, 2000);
     } catch (_) {
-      app.elementos.status.textContent = "Não foi possível copiar os comentários automaticamente.";
+      const areaTemporaria = document.createElement("textarea");
+      areaTemporaria.value = texto;
+      areaTemporaria.setAttribute("readonly", "");
+      areaTemporaria.style.position = "fixed";
+      areaTemporaria.style.opacity = "0";
+      document.body.appendChild(areaTemporaria);
+      areaTemporaria.select();
+
+      let copiado = false;
+      try { copiado = document.execCommand("copy"); } catch (_) { /* fallback indisponível */ }
+      areaTemporaria.remove();
+
+      if (!copiado) {
+        app.elementos.status.textContent = "Não foi possível copiar os comentários automaticamente.";
+        return;
+      }
+      app.elementos["copiado-ok"].style.display = "inline";
+      global.setTimeout(() => {
+        app.elementos["copiado-ok"].style.display = "none";
+      }, 2000);
     }
+  }
+
+  function posicionarBotaoSelecao(intervalo) {
+    const botao = app.elementos["btn-comentar-flutuante"];
+    const retangulo = intervalo.getBoundingClientRect();
+    const retanguloLeitor = app.elementos["leitor-viewport"].getBoundingClientRect();
+    const player = app.elementos["player-fixo"].getBoundingClientRect();
+    const limiteInferior = app.elementos["player-fixo"].hidden ? global.innerHeight : player.top;
+
+    if (
+      !retangulo.width ||
+      !retangulo.height ||
+      retangulo.bottom < retanguloLeitor.top ||
+      retangulo.top > retanguloLeitor.bottom
+    ) {
+      botao.hidden = true;
+      return;
+    }
+
+    botao.hidden = false;
+    const largura = botao.offsetWidth || 140;
+    const altura = botao.offsetHeight || 36;
+    const esquerda = Math.max(10, Math.min(global.innerWidth - largura - 10, retangulo.left + retangulo.width / 2 - largura / 2));
+    let topo = retangulo.bottom + 9;
+    if (topo + altura > limiteInferior - 8) topo = Math.max(8, retangulo.top - altura - 9);
+    botao.style.left = `${esquerda}px`;
+    botao.style.top = `${topo}px`;
+  }
+
+  function agendarPosicionamento() {
+    if (
+      !selecaoAtual ||
+      rafPosicionamento ||
+      !app.elementos["popup-comentario"].hidden
+    ) return;
+    rafPosicionamento = global.requestAnimationFrame(() => {
+      rafPosicionamento = 0;
+      if (selecaoAtual && app.elementos["popup-comentario"].hidden) {
+        posicionarBotaoSelecao(selecaoAtual.intervalo);
+      }
+    });
+  }
+
+  function ocultarAcaoSelecao() {
+    if (rafPosicionamento) {
+      global.cancelAnimationFrame(rafPosicionamento);
+      rafPosicionamento = 0;
+    }
+    app.elementos["btn-comentar-flutuante"].hidden = true;
+    if (app.elementos["popup-comentario"].hidden) selecaoAtual = null;
+  }
+
+  function abrirCompositor() {
+    if (!selecaoAtual) return;
+    const el = app.elementos;
+    if (rafPosicionamento) {
+      global.cancelAnimationFrame(rafPosicionamento);
+      rafPosicionamento = 0;
+    }
+    el["btn-comentar-flutuante"].hidden = true;
+
+    if (app.estado.reproduzindo && !app.estado.emPausa) {
+      app.modulos.leitor.alternarPlayPause();
+    }
+
+    app.modulos.notas.abrirAba("comentarios");
+    el["popup-quote"].textContent = selecaoAtual.texto;
+    el["popup-comentario"].hidden = false;
+    el["popup-input"].value = "";
+    global.requestAnimationFrame(() => {
+      rolarDentro(el["painel-comentarios"], el["popup-comentario"]);
+      rolarPaginaAteNoMobile(el["popup-comentario"]);
+      el["popup-input"].focus({ preventScroll: true });
+    });
   }
 
   function configurarSelecao() {
@@ -155,59 +459,65 @@
     document.addEventListener("selectionchange", () => {
       const selecao = global.getSelection();
       if (!selecao || selecao.isCollapsed || !selecao.toString().trim()) {
-        el["btn-comentar-flutuante"].classList.remove("ativo");
+        ocultarAcaoSelecao();
         return;
       }
 
       try {
         const intervalo = selecao.getRangeAt(0);
         if (!el["texto-renderizado"].contains(intervalo.commonAncestorContainer)) {
-          el["btn-comentar-flutuante"].classList.remove("ativo");
+          ocultarAcaoSelecao();
           return;
         }
 
         const texto = selecao.toString().trim();
         if (texto.length < 3) {
-          el["btn-comentar-flutuante"].classList.remove("ativo");
+          ocultarAcaoSelecao();
           return;
         }
 
-        selecaoAtual = { texto, intervalo: intervalo.cloneRange() };
-        el["btn-comentar-flutuante"].classList.add("ativo");
+        selecaoAtual = {
+          texto,
+          intervalo: intervalo.cloneRange(),
+          ancora: obterAncora(intervalo)
+        };
+        agendarPosicionamento();
       } catch (_) {
-        el["btn-comentar-flutuante"].classList.remove("ativo");
+        ocultarAcaoSelecao();
       }
     });
 
-    document.addEventListener("mousedown", (evento) => {
-      if (!el["popup-comentario"].contains(evento.target) && evento.target !== el["btn-comentar-flutuante"]) {
+    document.addEventListener("pointerdown", (evento) => {
+      if (
+        !el["popup-comentario"].hidden &&
+        !el["popup-comentario"].contains(evento.target) &&
+        evento.target !== el["btn-comentar-flutuante"]
+      ) {
         fecharPopup();
       }
     });
 
-    el["btn-comentar-flutuante"].addEventListener("click", () => {
-      if (!selecaoAtual) return;
-      el["btn-comentar-flutuante"].style.display = "none";
-
-      const sintese = global.speechSynthesis;
-      if (sintese?.speaking && !sintese.paused) {
-        app.modulos.leitor.alternarPlayPause();
-      }
-
-      el["popup-quote"].textContent = selecaoAtual.texto;
-      el["popup-comentario"].style.bottom = "70px";
-      el["popup-comentario"].style.left = "20px";
-      el["popup-comentario"].style.top = "auto";
-      el["popup-comentario"].style.display = "block";
-      el["popup-input"].value = "";
-      el["popup-input"].focus();
+    global.addEventListener("resize", () => {
+      if (selecaoAtual && !el["btn-comentar-flutuante"].hidden) agendarPosicionamento();
     });
+    global.addEventListener("scroll", () => {
+      if (selecaoAtual && !el["btn-comentar-flutuante"].hidden) agendarPosicionamento();
+    }, { passive: true });
+    el["leitor-viewport"].addEventListener("scroll", () => {
+      if (selecaoAtual && !el["btn-comentar-flutuante"].hidden) agendarPosicionamento();
+    }, { passive: true });
 
+    el["btn-comentar-flutuante"].addEventListener("pointerdown", (evento) => evento.preventDefault());
+    el["btn-comentar-flutuante"].addEventListener("click", abrirCompositor);
     el["popup-salvar"].addEventListener("click", salvarComentario);
-    el["popup-cancelar"].addEventListener("click", fecharPopup);
+    el["popup-cancelar"].addEventListener("click", () => fecharPopup(true));
     el["popup-input"].addEventListener("keydown", (evento) => {
       if (evento.key === "Enter" && (evento.ctrlKey || evento.metaKey)) salvarComentario();
-      if (evento.key === "Escape") fecharPopup();
+    });
+    el["popup-comentario"].addEventListener("keydown", (evento) => {
+      if (evento.key !== "Escape") return;
+      evento.preventDefault();
+      fecharPopup(true);
     });
   }
 
@@ -246,8 +556,7 @@
 
     reconhecimento.onerror = () => {
       microfoneAtivo = false;
-      el["btn-mic"].classList.remove("gravando");
-      el["btn-mic"].title = "Falar para transcrever";
+      atualizarBotaoMicrofone();
     };
 
     el["btn-mic"].addEventListener("click", (evento) => {
@@ -257,13 +566,10 @@
       if (microfoneAtivo) {
         textoBase = el["popup-input"].value;
         try { reconhecimento.start(); } catch (_) { /* já iniciado */ }
-        el["btn-mic"].classList.add("gravando");
-        el["btn-mic"].title = "Parar transcrição";
       } else {
         try { reconhecimento.stop(); } catch (_) { /* já parado */ }
-        el["btn-mic"].classList.remove("gravando");
-        el["btn-mic"].title = "Falar para transcrever";
       }
+      atualizarBotaoMicrofone();
     });
   }
 
@@ -274,19 +580,35 @@
     configurarSelecao();
     configurarMicrofone();
 
+    document.addEventListener("leitor:renderizado", (evento) => {
+      fecharPopup();
+      app.elementos["btn-comentar-flutuante"].hidden = true;
+      global.getSelection()?.removeAllRanges();
+
+      const textoDocumento = evento.detail?.texto || "";
+      hashDocumentoAtual = hashTexto(textoDocumento);
+      migrarComentariosLegados(textoDocumento);
+      renderizarComentarios();
+      reaplicarMarcacoes();
+    });
+
     app.elementos["btn-limpar-comentarios"].addEventListener("click", () => {
-      if (!global.confirm("Apagar todos os comentários?")) return;
-      comentarios = [];
+      const comentariosVisiveis = comentariosDoDocumentoAtual();
+      if (!comentariosVisiveis.length || !global.confirm("Apagar os comentários deste texto?")) return;
+      const idsVisiveis = new Set(comentariosVisiveis.map((comentario) => comentario.id));
+      comentarios = comentarios.filter((comentario) => !idsVisiveis.has(comentario.id));
       salvarNoNavegador();
       renderizarComentarios();
       app.elementos["texto-renderizado"].querySelectorAll(".trecho-comentado")
         .forEach((marca) => marca.replaceWith(...marca.childNodes));
+      app.elementos["texto-renderizado"].normalize();
     });
 
     app.elementos["btn-copiar-comentarios"].addEventListener("click", copiarComentarios);
   }
 
   app.modulos.comentarios = {
-    inicializar
+    inicializar,
+    reaplicarMarcacoes
   };
 })(window.LeitorClaude, window);

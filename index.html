@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +12,9 @@
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon-leitor-claude.svg">
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
-  <main>
+  <main class="app-shell">
     <header class="app-header">
       <div class="marca">
         <img class="marca-logo" src="assets/icons/icon-leitor-claude.svg" alt="" width="58" height="58">
@@ -34,78 +36,148 @@
         <span class="formato-badge">Markdown</span>
       </div>
 
-    <label class="sr-only" for="input-texto">Mensagem para leitura</label>
-    <textarea id="input-texto" placeholder="Cole aqui a mensagem do Claude Code..."></textarea>
+      <label class="sr-only" for="input-texto">Mensagem para leitura</label>
+      <textarea id="input-texto" placeholder="Cole aqui a mensagem do Claude Code..."></textarea>
 
-    <div class="controles" aria-label="Controles de leitura">
-      <button type="button" id="btn-carregar">▶ Carregar e Ouvir</button>
-      <button type="button" id="btn-direto">ouvir sem filtro</button>
-      <button type="button" id="btn-play" disabled>▶ Play</button>
-      <button type="button" id="btn-pause" disabled>⏸</button>
-      <button type="button" id="btn-stop" disabled>⏹</button>
-      <div class="vel-wrap">
-        <label for="velocidade">Vel:</label>
-        <input type="range" id="velocidade" min="0.5" max="3" step="0.1" value="1.8">
-        <span id="vel-display">1.8×</span>
+      <div class="acoes-carregamento">
+        <div class="botoes-carregamento">
+          <button type="button" id="btn-carregar">▶ Carregar e ouvir</button>
+          <button type="button" id="btn-direto">Ouvir sem filtro</button>
+        </div>
+        <div id="voz-info" aria-live="polite">Carregando vozes...</div>
       </div>
-    </div>
-
-    <div id="voz-info" aria-live="polite">Carregando vozes...</div>
     </section>
 
     <section id="bloco-removido" aria-label="Linhas removidas pelo filtro">
-      <button type="button" id="toggle-removido">▸ ver linhas removidas</button>
+      <button type="button" id="toggle-removido" aria-expanded="false">▸ ver linhas removidas</button>
       <div id="lista-removida"></div>
     </section>
 
-    <div id="progresso-bar" role="progressbar" aria-label="Progresso da leitura" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div id="progresso-fill"></div>
-    </div>
-    <article id="texto-renderizado"></article>
-    <div id="status" aria-live="polite"></div>
+    <section id="leitura-workspace" class="leitura-workspace" hidden>
+      <section class="leitura-coluna" aria-labelledby="leitura-titulo">
+        <header class="leitura-cabecalho">
+          <div>
+            <span class="secao-kicker">LEITURA ATUAL</span>
+            <h2 id="leitura-titulo">Texto preparado</h2>
+          </div>
+          <button type="button" id="btn-acompanhar" class="btn-acompanhar ativo" aria-pressed="true">
+            <span class="acompanhar-dot"></span>
+            <span id="acompanhar-label">Acompanhando</span>
+          </button>
+        </header>
 
-    <section id="painel-comentarios">
-      <h2 class="painel-titulo">
-        💬 Comentários
-        <span class="painel-acoes">
-          <span id="copiado-ok">✓ copiado!</span>
-          <button type="button" id="btn-copiar-comentarios">📋 Copiar tudo</button>
-          <button type="button" id="btn-limpar-comentarios">limpar</button>
-        </span>
-      </h2>
-      <div id="lista-comentarios"></div>
+        <div id="leitor-viewport" tabindex="0" aria-label="Texto da leitura. Role sem mover a página.">
+          <article id="texto-renderizado"></article>
+        </div>
+
+        <footer class="leitura-rodape">
+          <div id="status" aria-live="polite"></div>
+          <span class="atalho-dica">Espaço: reproduzir ou pausar</span>
+        </footer>
+      </section>
+
+      <aside id="painel-lateral" aria-labelledby="painel-lateral-titulo">
+        <header id="notas-header" class="painel-lateral-header">
+          <div>
+            <span class="secao-kicker">ÁREA LATERAL</span>
+            <h2 id="painel-lateral-titulo">Notas e comentários</h2>
+          </div>
+          <button type="button" id="btn-minimizar" title="Recolher painel" aria-label="Recolher painel lateral" aria-controls="painel-lateral-conteudo" aria-expanded="true">›</button>
+        </header>
+
+        <div id="painel-lateral-conteudo">
+          <div class="painel-tabs" role="tablist" aria-label="Conteúdo lateral">
+            <button type="button" id="tab-notas" class="painel-tab ativo" role="tab" aria-selected="true" aria-controls="painel-notas">Notas</button>
+            <button type="button" id="tab-comentarios" class="painel-tab" role="tab" aria-selected="false" aria-controls="painel-comentarios">
+              Comentários <span id="comentarios-count" class="tab-contador">0</span>
+            </button>
+          </div>
+
+          <section id="painel-notas" class="painel-conteudo" role="tabpanel" aria-labelledby="tab-notas">
+            <div id="notas-wrapper">
+              <div id="notas-box">
+                <div class="notas-intro">
+                  <strong>Notas livres</strong>
+                  <span>Salvas automaticamente neste navegador.</span>
+                </div>
+                <label class="sr-only" for="notas-textarea">Anotações</label>
+                <textarea id="notas-textarea" placeholder="Digite suas anotações aqui..."></textarea>
+                <div id="notas-rodape">
+                  <span id="notas-chars">0 caracteres</span>
+                  <button type="button" id="btn-limpar-notas">Limpar</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="painel-comentarios" class="painel-conteudo" role="tabpanel" aria-labelledby="tab-comentarios" hidden>
+            <div class="comentarios-cabecalho">
+              <div>
+                <strong>Comentários de seleção</strong>
+                <span>Selecione um trecho no leitor para comentar.</span>
+              </div>
+              <div class="painel-acoes">
+                <span id="copiado-ok" role="status">✓ copiado</span>
+                <button type="button" id="btn-copiar-comentarios">Copiar</button>
+                <button type="button" id="btn-limpar-comentarios">Limpar</button>
+              </div>
+            </div>
+
+            <div id="popup-comentario" class="comentario-compositor" role="dialog" aria-label="Adicionar comentário" aria-describedby="popup-quote" hidden>
+              <span class="compositor-rotulo">TRECHO SELECIONADO</span>
+              <div id="popup-quote"></div>
+              <label class="sr-only" for="popup-input">Comentário</label>
+              <textarea id="popup-input" placeholder="Escreva um comentário..."></textarea>
+              <div class="popup-btns">
+                <button type="button" id="btn-mic" title="Falar para transcrever" aria-label="Falar para transcrever" aria-pressed="false">🎙</button>
+                <button type="button" id="popup-cancelar">Cancelar</button>
+                <button type="button" id="popup-salvar">Salvar</button>
+              </div>
+            </div>
+
+            <div id="lista-comentarios"></div>
+          </section>
+        </div>
+      </aside>
     </section>
   </main>
 
-  <button type="button" id="btn-comentar-flutuante">💬 Comentar seleção</button>
+  <button type="button" id="btn-comentar-flutuante" hidden>Comentar seleção</button>
 
-  <div id="popup-comentario" role="dialog" aria-label="Adicionar comentário">
-    <div id="popup-quote"></div>
-    <label class="sr-only" for="popup-input">Comentário</label>
-    <textarea id="popup-input" placeholder="Seu comentário..."></textarea>
-    <div class="popup-btns">
-      <button type="button" id="btn-mic" title="Falar para transcrever" aria-label="Falar para transcrever">🎙️</button>
-      <button type="button" id="popup-cancelar">Cancelar</button>
-      <button type="button" id="popup-salvar">Salvar</button>
+  <footer id="player-fixo" aria-label="Controles de reprodução" hidden>
+    <div class="player-timeline">
+      <span id="tempo-atual" class="player-tempo" title="Tempo estimado" aria-label="Tempo estimado decorrido">00:00</span>
+      <label class="sr-only" for="timeline">Posição estimada da leitura por trecho</label>
+      <input type="range" id="timeline" min="0" max="1" step="1" value="0" title="Navegação estimada por trecho" disabled>
+      <span id="tempo-total" class="player-tempo" title="Duração estimada" aria-label="Duração estimada">00:00</span>
     </div>
-  </div>
 
-  <aside id="notas-wrapper">
-    <div id="notas-box">
-      <div id="notas-header">
-        <span>📝 Notas</span>
-        <div id="notas-acoes">
-          <button type="button" id="btn-minimizar" title="Minimizar" aria-label="Minimizar notas">─</button>
-        </div>
+    <div class="player-linha-controles">
+      <div id="player-trecho" class="player-trecho">Nenhum texto carregado</div>
+
+      <div class="player-controles-principais">
+        <button type="button" id="btn-stop" class="player-btn player-btn-secundario" disabled title="Parar e voltar ao início" aria-label="Parar e voltar ao início">■</button>
+        <button type="button" id="btn-retroceder" class="player-btn" disabled title="Trecho anterior" aria-label="Voltar ao trecho anterior">↶</button>
+        <button type="button" id="btn-play" class="player-btn player-btn-play" disabled aria-label="Reproduzir">▶</button>
+        <button type="button" id="btn-avancar" class="player-btn" disabled title="Próximo trecho" aria-label="Avançar para o próximo trecho">↷</button>
       </div>
-      <label class="sr-only" for="notas-textarea">Anotações</label>
-      <textarea id="notas-textarea" placeholder="Digite suas anotações aqui..."></textarea>
-      <div id="notas-rodape">
-        <span id="notas-chars">0 caracteres</span>
-        <button type="button" id="btn-limpar-notas">limpar</button>
-      </div>
+
+      <label class="velocidade-controle" for="velocidade">
+        <span class="sr-only">Velocidade</span>
+        <select id="velocidade" aria-label="Velocidade da leitura">
+          <option value="0.75">0,75×</option>
+          <option value="1">1,0×</option>
+          <option value="1.25">1,25×</option>
+          <option value="1.5">1,5×</option>
+          <option value="1.8" selected>1,8×</option>
+          <option value="2">2,0×</option>
+          <option value="2.5">2,5×</option>
+          <option value="3">3,0×</option>
+        </select>
+        <span id="vel-display" class="sr-only">1,8×</span>
+      </label>
     </div>
-  </aside>
+  </footer>
 
   <!-- Scripts tradicionais com defer preservam a abertura direta via file://. -->
   <script defer src="js/app.js"></script>
@@ -116,4 +188,5 @@
   <script defer src="js/comentarios.js"></script>
   <script defer src="js/notas.js"></script>
 </body>
+
 </html>

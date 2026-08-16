@@ -10,6 +10,14 @@ Ferramenta web local para ouvir, revisar e comentar respostas extensas do Claude
 4. Clique em um parágrafo para começar a leitura daquele ponto.
 5. Selecione um trecho para criar um comentário contextual.
 
+## Controles durante a leitura
+
+- O texto fica contido em uma área rolável própria, sem alongar a página inteira.
+- Acompanhamento automático move apenas o conteúdo interno do leitor. Uma rolagem manual o suspende; use **Retomar acompanhamento** para reativá-lo.
+- O player permanece fixo no rodapé com play/pausa, parar, trecho anterior, próximo trecho, timeline e velocidade.
+- A timeline representa a posição no texto e os tempos exibidos são estimados, pois a Web Speech API não fornece duração ou seek de áudio reais.
+- Notas e comentários de seleção ficam na área lateral. Ambos são salvos localmente no navegador.
+
 Não há instalação, dependências de terceiros ou backend. Os arquivos JavaScript são scripts tradicionais com `defer`, então a aplicação também funciona quando `index.html` é aberto diretamente por `file://`.
 
 ## Estrutura
