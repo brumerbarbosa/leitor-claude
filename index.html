@@ -3,16 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1a1a2e">
+  <meta name="theme-color" content="#0d0b18">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Leitor Claude Code</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-leitor-claude.svg">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <main>
-    <h1 class="titulo">🎧 Leitor — Claude Code</h1>
+    <header class="app-header">
+      <div class="marca">
+        <img class="marca-logo" src="assets/icons/icon-leitor-claude.svg" alt="" width="58" height="58">
+        <div class="marca-texto">
+          <span class="marca-kicker">LEITOR INTELIGENTE</span>
+          <h1 class="titulo">Leitor Claude</h1>
+          <p class="marca-assinatura">Ouça. Revise. Comente.</p>
+        </div>
+      </div>
+      <span class="app-badge"><span class="app-badge-dot"></span> Sem login</span>
+    </header>
+
+    <section class="entrada-card" aria-labelledby="entrada-titulo">
+      <div class="secao-cabecalho">
+        <div>
+          <span class="secao-kicker">NOVA LEITURA</span>
+          <h2 id="entrada-titulo">Cole uma resposta</h2>
+        </div>
+        <span class="formato-badge">Markdown</span>
+      </div>
 
     <label class="sr-only" for="input-texto">Mensagem para leitura</label>
     <textarea id="input-texto" placeholder="Cole aqui a mensagem do Claude Code..."></textarea>
@@ -31,6 +51,7 @@
     </div>
 
     <div id="voz-info" aria-live="polite">Carregando vozes...</div>
+    </section>
 
     <section id="bloco-removido" aria-label="Linhas removidas pelo filtro">
       <button type="button" id="toggle-removido">▸ ver linhas removidas</button>
