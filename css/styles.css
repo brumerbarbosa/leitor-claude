@@ -75,6 +75,36 @@ input {
   font: inherit;
 }
 
+.svg-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.icone {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icone-pequeno {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-com-icone {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
 button {
   padding: 8px 16px;
   cursor: pointer;
@@ -994,6 +1024,11 @@ textarea::placeholder {
   font-size: 1.02rem;
 }
 
+.player-btn .icone {
+  width: 18px;
+  height: 18px;
+}
+
 .player-btn-play {
   width: 46px;
   height: 46px;
@@ -1001,6 +1036,11 @@ textarea::placeholder {
   background: var(--cor-primaria-forte);
   color: #fff;
   font-size: 1.08rem;
+}
+
+.player-btn-play .icone {
+  width: 22px;
+  height: 22px;
 }
 
 .player-btn-secundario {
@@ -1386,6 +1426,11 @@ body.com-player {
   color: currentColor;
   font-size: 0.92rem;
   font-weight: 700;
+}
+
+.sidebar-icone .icone {
+  width: 18px;
+  height: 18px;
 }
 
 .sidebar-label {

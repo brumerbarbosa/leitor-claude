@@ -61,12 +61,22 @@
   function definirSidebarRecolhida(valor, persistir = true) {
     const recolhida = Boolean(valor);
     const el = app.elementos;
+    const iconeToggle = el["btn-sidebar-toggle"].querySelector("use");
     app.estado.sidebarRecolhida = recolhida;
     el["app-frame"].classList.toggle("sidebar-recolhida", recolhida);
-    el["btn-sidebar-toggle"].textContent = recolhida ? "›" : "‹";
+    iconeToggle?.setAttribute("href", recolhida ? "#icon-chevron-right" : "#icon-chevron-left");
     el["btn-sidebar-toggle"].setAttribute("aria-expanded", String(!recolhida));
     el["btn-sidebar-toggle"].setAttribute("aria-label", recolhida ? "Expandir menu" : "Recolher menu");
     if (persistir) salvarPreferencia(CHAVE_SIDEBAR, recolhida);
+  }
+
+  function atualizarBotaoRemovidos(aberto, quantidade) {
+    const botao = app.elementos["toggle-removido"];
+    botao.querySelector("use")?.setAttribute("href", aberto ? "#icon-chevron-down" : "#icon-chevron-right");
+    botao.querySelector("span").textContent = aberto
+      ? "ocultar linhas removidas"
+      : `ver ${quantidade} linha(s) removida(s)`;
+    botao.setAttribute("aria-expanded", String(aberto));
   }
 
   function definirNavegacaoAtiva(id) {
@@ -129,8 +139,7 @@
         .map((linha) => `<p>${app.modulos.seguranca.escaparHtml(linha)}</p>`)
         .join("");
       el["bloco-removido"].style.display = "block";
-      el["toggle-removido"].textContent = `▸ ver ${resultado.removidas.length} linha(s) removida(s)`;
-      el["toggle-removido"].setAttribute("aria-expanded", "false");
+      atualizarBotaoRemovidos(false, resultado.removidas.length);
       el["lista-removida"].style.display = "none";
     } else {
       el["bloco-removido"].style.display = "none";
@@ -166,10 +175,7 @@
       const aberto = el["lista-removida"].style.display !== "none";
       const quantidade = el["lista-removida"].querySelectorAll("p").length;
       el["lista-removida"].style.display = aberto ? "none" : "block";
-      el["toggle-removido"].setAttribute("aria-expanded", String(!aberto));
-      el["toggle-removido"].textContent = aberto
-        ? `▸ ver ${quantidade} linha(s) removida(s)`
-        : "▾ ocultar linhas removidas";
+      atualizarBotaoRemovidos(!aberto, quantidade);
     });
 
     el["btn-editar-texto"].addEventListener("click", () => {
