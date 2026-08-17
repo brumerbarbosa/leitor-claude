@@ -67,38 +67,19 @@
     });
   }
 
-  function rolarPaginaAteNoMobile(elemento) {
+  function exibirAreaNoMobile(elemento) {
     if (!global.matchMedia?.("(max-width: 940px)").matches || !elemento) return;
-    const caixa = elemento.getBoundingClientRect();
-    const playerTopo = app.elementos["player-fixo"].hidden
-      ? global.innerHeight
-      : app.elementos["player-fixo"].getBoundingClientRect().top;
-    const margem = 12;
-    const limiteInferior = playerTopo - margem;
-    let deslocamento = 0;
-
-    if (caixa.top < margem) {
-      deslocamento = caixa.top - margem;
-    } else if (caixa.bottom > limiteInferior) {
-      deslocamento = caixa.height > limiteInferior - margem
-        ? caixa.top - margem
-        : caixa.bottom - limiteInferior;
-    }
-    if (!deslocamento) return;
-
-    global.scrollTo({
-      top: Math.max(0, global.scrollY + deslocamento),
-      behavior: global.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-    });
+    const painel = app.elementos["painel-lateral"];
+    painel.classList.toggle("aberto-mobile", painel.contains(elemento));
   }
 
   function abrirComentarioNaLateral(id) {
-    app.modulos.notas?.abrirAba("comentarios");
+    app.modulos.notas?.abrirSecao("comentarios");
     const item = app.elementos["lista-comentarios"].querySelector(`.comentario-item[data-id="${id}"]`);
     if (!item) return;
 
-    rolarDentro(app.elementos["painel-comentarios"], item);
-    rolarPaginaAteNoMobile(item);
+    rolarDentro(app.elementos["lista-comentarios"], item);
+    exibirAreaNoMobile(item);
     item.classList.add("realce");
     item.querySelector(".ci-abrir")?.focus({ preventScroll: true });
     global.setTimeout(() => item.classList.remove("realce"), 1200);
@@ -234,7 +215,7 @@
     }
     app.modulos.renderizador.definirAcompanhamento(false, false);
     app.modulos.renderizador.rolarElementoNoLeitor(marca, true);
-    rolarPaginaAteNoMobile(app.elementos["leitura-workspace"]);
+    exibirAreaNoMobile(app.elementos["leitura-workspace"]);
     marca.focus({ preventScroll: true });
   }
 
@@ -304,7 +285,7 @@
     el["popup-input"].value = "";
     pararMicrofone();
     selecaoAtual = null;
-    if (devolverFoco) el["tab-comentarios"].focus();
+    if (devolverFoco) app.modulos.notas?.abrirSecao("comentarios", true);
   }
 
   function salvarComentario() {
@@ -442,13 +423,12 @@
       app.modulos.leitor.alternarPlayPause();
     }
 
-    app.modulos.notas.abrirAba("comentarios");
+    app.modulos.notas.abrirSecao("comentarios");
     el["popup-quote"].textContent = selecaoAtual.texto;
     el["popup-comentario"].hidden = false;
     el["popup-input"].value = "";
     global.requestAnimationFrame(() => {
-      rolarDentro(el["painel-comentarios"], el["popup-comentario"]);
-      rolarPaginaAteNoMobile(el["popup-comentario"]);
+      exibirAreaNoMobile(el["popup-comentario"]);
       el["popup-input"].focus({ preventScroll: true });
     });
   }
@@ -517,6 +497,7 @@
     el["popup-comentario"].addEventListener("keydown", (evento) => {
       if (evento.key !== "Escape") return;
       evento.preventDefault();
+      evento.stopPropagation();
       fecharPopup(true);
     });
   }

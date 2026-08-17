@@ -2,9 +2,6 @@
   "use strict";
 
   const CHAVE_NOTAS = "leitor_notas";
-  const CHAVE_PAINEL = "leitor_painel_lateral";
-  let recolhido = false;
-  let abaAtiva = "notas";
 
   function lerLocal(chave, padrao = "") {
     try {
@@ -27,62 +24,28 @@
     app.elementos["notas-chars"].textContent = `${quantidade} ${quantidade === 1 ? "caractere" : "caracteres"}`;
   }
 
-  function aplicarEstadoRecolhido() {
-    const el = app.elementos;
-    el["painel-lateral"].classList.toggle("recolhido", recolhido);
-    el["leitura-workspace"].classList.toggle("painel-recolhido", recolhido);
-    el["btn-minimizar"].textContent = recolhido ? "‹" : "›";
-    el["btn-minimizar"].title = recolhido ? "Expandir painel" : "Recolher painel";
-    el["btn-minimizar"].setAttribute("aria-label", recolhido ? "Expandir painel lateral" : "Recolher painel lateral");
-    el["btn-minimizar"].setAttribute("aria-expanded", String(!recolhido));
+  function rolarSecaoNoPainel(secao) {
+    const container = app.elementos["painel-lateral-conteudo"];
+    if (!container || !secao || container.scrollHeight <= container.clientHeight) return;
+    const caixaContainer = container.getBoundingClientRect();
+    const caixaSecao = secao.getBoundingClientRect();
+    container.scrollTo({
+      top: Math.max(0, container.scrollTop + caixaSecao.top - caixaContainer.top - 8),
+      behavior: global.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
   }
 
-  function definirRecolhido(valor, persistir = true) {
-    recolhido = Boolean(valor);
-    aplicarEstadoRecolhido();
-    if (persistir) salvarLocal(CHAVE_PAINEL, JSON.stringify({ recolhido, abaAtiva }));
-  }
-
-  function abrirAba(nome, focar = false) {
+  function abrirSecao(nome, focar = false) {
     const el = app.elementos;
     const comentarios = nome === "comentarios";
-    abaAtiva = comentarios ? "comentarios" : "notas";
+    const secao = comentarios ? el["painel-comentarios"] : el["painel-notas"];
+    el["painel-lateral"].classList.add("aberto-mobile");
+    el["painel-lateral"].dataset.secaoAtiva = comentarios ? "comentarios" : "notas";
 
-    el["tab-notas"].classList.toggle("ativo", !comentarios);
-    el["tab-comentarios"].classList.toggle("ativo", comentarios);
-    el["tab-notas"].setAttribute("aria-selected", String(!comentarios));
-    el["tab-comentarios"].setAttribute("aria-selected", String(comentarios));
-    el["tab-notas"].tabIndex = comentarios ? -1 : 0;
-    el["tab-comentarios"].tabIndex = comentarios ? 0 : -1;
-    el["painel-notas"].hidden = comentarios;
-    el["painel-comentarios"].hidden = !comentarios;
-
-    if (recolhido) definirRecolhido(false, false);
-    salvarLocal(CHAVE_PAINEL, JSON.stringify({ recolhido, abaAtiva }));
-    if (focar) (comentarios ? el["tab-comentarios"] : el["tab-notas"]).focus();
-  }
-
-  function configurarAbas() {
-    const el = app.elementos;
-    el["tab-notas"].addEventListener("click", () => abrirAba("notas"));
-    el["tab-comentarios"].addEventListener("click", () => abrirAba("comentarios"));
-
-    [el["tab-notas"], el["tab-comentarios"]].forEach((aba) => {
-      aba.addEventListener("keydown", (evento) => {
-        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(evento.key)) return;
-        evento.preventDefault();
-        if (evento.key === "Home") {
-          abrirAba("notas", true);
-          return;
-        }
-        if (evento.key === "End") {
-          abrirAba("comentarios", true);
-          return;
-        }
-
-        const estaEmNotas = aba === el["tab-notas"];
-        abrirAba(estaEmNotas ? "comentarios" : "notas", true);
-      });
+    global.requestAnimationFrame(() => {
+      rolarSecaoNoPainel(secao);
+      if (!focar) return;
+      (comentarios ? secao : el["notas-textarea"]).focus({ preventScroll: true });
     });
   }
 
@@ -91,24 +54,10 @@
     el["notas-textarea"].value = lerLocal(CHAVE_NOTAS);
     atualizarContagem();
 
-    const estadoSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_PAINEL, null);
-    if (estadoSalvo && typeof estadoSalvo === "object") {
-      recolhido = Boolean(estadoSalvo.recolhido);
-      abaAtiva = estadoSalvo.abaAtiva === "comentarios" ? "comentarios" : "notas";
-    }
-
-    const deveIniciarRecolhido = recolhido;
-    recolhido = false;
-    abrirAba(abaAtiva);
-    definirRecolhido(deveIniciarRecolhido);
-    configurarAbas();
-
     el["notas-textarea"].addEventListener("input", () => {
       salvarLocal(CHAVE_NOTAS, el["notas-textarea"].value);
       atualizarContagem();
     });
-
-    el["btn-minimizar"].addEventListener("click", () => definirRecolhido(!recolhido));
 
     el["btn-limpar-notas"].addEventListener("click", () => {
       if (!el["notas-textarea"].value || !global.confirm("Limpar todas as notas?")) return;
@@ -120,7 +69,7 @@
 
   app.modulos.notas = {
     inicializar,
-    abrirAba,
-    definirRecolhido
+    abrirSecao,
+    abrirAba: abrirSecao
   };
 })(window.LeitorClaude, window);

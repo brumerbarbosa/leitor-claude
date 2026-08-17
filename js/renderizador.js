@@ -139,11 +139,8 @@
   function atualizarBotaoAcompanhamento() {
     const ativo = app.estado.seguindoLeitura;
     const botao = app.elementos["btn-acompanhar"];
-    botao.classList.toggle("ativo", ativo);
-    botao.setAttribute("aria-pressed", String(ativo));
-    app.elementos["acompanhar-label"].textContent = ativo
-      ? "Acompanhando"
-      : "Retomar acompanhamento";
+    botao.hidden = ativo || !app.estado.frases.length;
+    app.elementos["acompanhar-label"].textContent = "Sincronizar";
   }
 
   function rolarElementoNoLeitor(elemento, centralizar = false, indiceFrase = null) {
@@ -333,7 +330,6 @@
 
     estado.elementosRenderizados = Array.from(el["texto-renderizado"].querySelectorAll("[data-elid]"));
     el["leitor-viewport"].scrollTop = 0;
-    el["leitura-workspace"].hidden = false;
     definirAcompanhamento(true, false);
 
     el.status.textContent = estado.frases.length
@@ -369,7 +365,9 @@
     const viewport = app.elementos["leitor-viewport"];
 
     app.elementos["btn-acompanhar"].addEventListener("click", () => {
-      definirAcompanhamento(!app.estado.seguindoLeitura);
+      definirAcompanhamento(true);
+      viewport.focus({ preventScroll: true });
+      app.elementos.status.textContent = "Leitura sincronizada com o trecho atual.";
     });
 
     viewport.addEventListener("wheel", () => definirAcompanhamento(false, false), { passive: true });
