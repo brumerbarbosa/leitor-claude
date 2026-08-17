@@ -9,6 +9,7 @@
   let textoBase = "";
   let hashDocumentoAtual = "";
   let rafPosicionamento = 0;
+  let modoSelecaoTrechos = false;
 
   function salvarNoNavegador() {
     try {
@@ -70,7 +71,7 @@
   function exibirAreaNoMobile(elemento) {
     if (!global.matchMedia?.("(max-width: 940px)").matches || !elemento) return;
     const painel = app.elementos["painel-lateral"];
-    painel.classList.toggle("aberto-mobile", painel.contains(elemento));
+    app.modulos.shell?.definirPainelMovelAberto(painel.contains(elemento));
   }
 
   function abrirComentarioNaLateral(id) {
@@ -195,11 +196,16 @@
     raiz.normalize();
 
     comentarios
-      .filter((comentario) => comentario.documento === hashDocumentoAtual && comentario.ancora)
+      .filter((comentario) => comentario.documento === hashDocumentoAtual && (comentario.ancora || comentario.ancoras?.length))
       .forEach((comentario) => {
-        const intervalo = criarIntervaloPorOffsets(comentario.ancora.inicio, comentario.ancora.fim);
-        if (!intervalo || intervalo.toString().trim() !== comentario.quote.trim()) return;
-        destacarTrecho(intervalo, comentario.id);
+        const ancoras = comentario.ancoras?.length ? comentario.ancoras : [comentario.ancora];
+        const trechos = comentario.trechos?.length ? comentario.trechos : [comentario.quote];
+        ancoras.forEach((ancora, indice) => {
+          const intervalo = criarIntervaloPorOffsets(ancora.inicio, ancora.fim);
+          const trechoEsperado = trechos[indice] || "";
+          if (!intervalo || (trechoEsperado && intervalo.toString().trim() !== trechoEsperado.trim())) return;
+          destacarTrecho(intervalo, comentario.id);
+        });
       });
   }
 
@@ -223,6 +229,11 @@
     const el = app.elementos;
     const comentariosVisiveis = comentariosDoDocumentoAtual();
     el["comentarios-count"].textContent = String(comentariosVisiveis.length);
+    el["painel-comentarios-count"].textContent = String(comentariosVisiveis.length);
+    el["painel-comentarios-count"].setAttribute(
+      "aria-label",
+      `${comentariosVisiveis.length} ${comentariosVisiveis.length === 1 ? "comentário" : "comentários"}`
+    );
     el["btn-copiar-comentarios"].disabled = comentariosVisiveis.length === 0;
     el["btn-limpar-comentarios"].disabled = comentariosVisiveis.length === 0;
 
@@ -230,7 +241,7 @@
       el["lista-comentarios"].innerHTML = `
         <div class="comentarios-vazio">
           ${hashDocumentoAtual
-            ? "Nenhum comentário neste texto.<br>Selecione um trecho no leitor para começar."
+            ? "Nenhum comentário neste texto."
             : "Carregue um texto para ver e criar comentários."}
         </div>
       `;
@@ -298,13 +309,17 @@
       quote: selecaoAtual.texto,
       comment: texto,
       documento: hashDocumentoAtual || hashTexto(app.elementos["texto-renderizado"].textContent || ""),
-      ancora: selecaoAtual.ancora
+      ancora: selecaoAtual.ancora,
+      ancoras: selecaoAtual.ancoras || (selecaoAtual.ancora ? [selecaoAtual.ancora] : []),
+      trechos: selecaoAtual.trechos || [selecaoAtual.texto]
     };
 
     comentarios.push(comentario);
     salvarNoNavegador();
     renderizarComentarios();
-    destacarTrecho(selecaoAtual.intervalo, id);
+    (selecaoAtual.intervalos?.length ? selecaoAtual.intervalos : [selecaoAtual.intervalo])
+      .filter(Boolean)
+      .forEach((intervalo) => destacarTrecho(intervalo, id));
     fecharPopup();
     global.getSelection()?.removeAllRanges();
     abrirComentarioNaLateral(id);
@@ -410,6 +425,130 @@
     if (app.elementos["popup-comentario"].hidden) selecaoAtual = null;
   }
 
+  function criarIntervaloDoElemento(elemento) {
+    const walker = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
+    let primeiro = null;
+    let ultimo = null;
+
+    while (walker.nextNode()) {
+      const no = walker.currentNode;
+      if (!no.textContent.trim()) continue;
+      if (!primeiro) primeiro = no;
+      ultimo = no;
+    }
+
+    if (!primeiro || !ultimo) return null;
+    const intervalo = document.createRange();
+    intervalo.setStart(primeiro, 0);
+    intervalo.setEnd(ultimo, ultimo.length);
+    return intervalo.collapsed ? null : intervalo;
+  }
+
+  function atualizarBarraSelecaoTrechos() {
+    const quantidade = selecaoAtual?.intervalos?.length || (selecaoAtual ? 1 : 0);
+    app.elementos["selecao-trechos-status"].textContent = quantidade
+      ? `${quantidade} ${quantidade === 1 ? "trecho selecionado" : "trechos selecionados"}`
+      : "Selecione uma checkbox no texto";
+    app.elementos["btn-comentar-trecho-marcado"].disabled = quantidade === 0;
+  }
+
+  function removerCheckboxesDosTrechos() {
+    const raiz = app.elementos["texto-renderizado"];
+    raiz.classList.remove("modo-selecao-trechos");
+    raiz.querySelectorAll("[data-elid]").forEach((elemento) => {
+      elemento.classList.remove("trecho-marcavel", "trecho-marcado-checkbox");
+      if (elemento.dataset.tituloLeitura !== undefined) {
+        elemento.title = elemento.dataset.tituloLeitura;
+        delete elemento.dataset.tituloLeitura;
+      }
+    });
+    raiz.querySelectorAll(".trecho-checkbox").forEach((checkbox) => checkbox.remove());
+  }
+
+  function encerrarModoSelecaoTrechos(limparSelecao = true) {
+    modoSelecaoTrechos = false;
+    removerCheckboxesDosTrechos();
+    app.elementos["barra-selecao-trechos"].hidden = true;
+    app.elementos["btn-selecionar-trechos"].setAttribute("aria-pressed", "false");
+    app.elementos["btn-selecionar-trechos"].querySelector("span").textContent = "Marcar trecho";
+    if (limparSelecao) selecaoAtual = null;
+    atualizarBarraSelecaoTrechos();
+  }
+
+  function selecionarElementoPorCheckbox(checkbox, elemento) {
+    const raiz = app.elementos["texto-renderizado"];
+    elemento.classList.toggle("trecho-marcado-checkbox", checkbox.checked);
+
+    const selecoes = Array.from(raiz.querySelectorAll(".trecho-checkbox:checked"))
+      .map((marcador) => {
+        const trecho = marcador.closest("[data-elid]");
+        const intervalo = trecho ? criarIntervaloDoElemento(trecho) : null;
+        const texto = intervalo?.toString().trim() || "";
+        if (!intervalo || texto.length < 3) {
+          marcador.checked = false;
+          trecho?.classList.remove("trecho-marcado-checkbox");
+          return null;
+        }
+        return { texto, intervalo, ancora: obterAncora(intervalo) };
+      })
+      .filter(Boolean);
+
+    selecaoAtual = selecoes.length ? {
+      texto: selecoes.map((item) => item.texto).join("\n\n"),
+      trechos: selecoes.map((item) => item.texto),
+      intervalo: selecoes[0].intervalo,
+      intervalos: selecoes.map((item) => item.intervalo),
+      ancora: selecoes[0].ancora,
+      ancoras: selecoes.map((item) => item.ancora)
+    } : null;
+    atualizarBarraSelecaoTrechos();
+  }
+
+  function ativarModoSelecaoTrechos() {
+    if (modoSelecaoTrechos) {
+      encerrarModoSelecaoTrechos();
+      return;
+    }
+
+    const el = app.elementos;
+    const elementos = Array.from(el["texto-renderizado"].querySelectorAll("[data-elid]"));
+    if (!elementos.length) return;
+
+    fecharPopup();
+    global.getSelection()?.removeAllRanges();
+    if (app.estado.reproduzindo && !app.estado.emPausa) app.modulos.leitor.alternarPlayPause();
+    app.modulos.renderizador.definirAcompanhamento(false, false);
+
+    modoSelecaoTrechos = true;
+    el["texto-renderizado"].classList.add("modo-selecao-trechos");
+    el["btn-selecionar-trechos"].setAttribute("aria-pressed", "true");
+    el["btn-selecionar-trechos"].querySelector("span").textContent = "Cancelar marcação";
+    el["barra-selecao-trechos"].hidden = false;
+    selecaoAtual = null;
+    atualizarBarraSelecaoTrechos();
+
+    elementos.forEach((elemento, indice) => {
+      const texto = elemento.textContent.replace(/\s+/g, " ").trim();
+      if (!texto) return;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "trecho-checkbox";
+      checkbox.setAttribute("aria-label", `Selecionar trecho ${indice + 1}: ${texto.slice(0, 100)}`);
+      checkbox.addEventListener("pointerdown", (evento) => evento.stopPropagation());
+      checkbox.addEventListener("click", (evento) => evento.stopPropagation());
+      checkbox.addEventListener("change", () => selecionarElementoPorCheckbox(checkbox, elemento));
+      elemento.dataset.tituloLeitura = elemento.title || "";
+      elemento.title = "Marcar este trecho para comentar";
+      elemento.classList.add("trecho-marcavel");
+      elemento.insertBefore(checkbox, elemento.firstChild);
+    });
+
+    app.modulos.shell?.definirPainelMovelAberto(false);
+    global.requestAnimationFrame(() => {
+      el["texto-renderizado"].querySelector(".trecho-checkbox")?.focus({ preventScroll: true });
+    });
+  }
+
   function abrirCompositor() {
     if (!selecaoAtual) return;
     const el = app.elementos;
@@ -418,6 +557,7 @@
       rafPosicionamento = 0;
     }
     el["btn-comentar-flutuante"].hidden = true;
+    if (modoSelecaoTrechos) encerrarModoSelecaoTrechos(false);
 
     if (app.estado.reproduzindo && !app.estado.emPausa) {
       app.modulos.leitor.alternarPlayPause();
@@ -437,6 +577,7 @@
     const el = app.elementos;
 
     document.addEventListener("selectionchange", () => {
+      if (modoSelecaoTrechos) return;
       const selecao = global.getSelection();
       if (!selecao || selecao.isCollapsed || !selecao.toString().trim()) {
         ocultarAcaoSelecao();
@@ -458,8 +599,11 @@
 
         selecaoAtual = {
           texto,
+          trechos: [texto],
           intervalo: intervalo.cloneRange(),
-          ancora: obterAncora(intervalo)
+          intervalos: [intervalo.cloneRange()],
+          ancora: obterAncora(intervalo),
+          ancoras: [obterAncora(intervalo)]
         };
         agendarPosicionamento();
       } catch (_) {
@@ -487,8 +631,23 @@
       if (selecaoAtual && !el["btn-comentar-flutuante"].hidden) agendarPosicionamento();
     }, { passive: true });
 
+    el["texto-renderizado"].addEventListener("click", (evento) => {
+      if (!modoSelecaoTrechos || evento.target.closest(".trecho-checkbox")) return;
+      const elemento = evento.target.closest("[data-elid]");
+      if (!elemento || !el["texto-renderizado"].contains(elemento)) return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      elemento.querySelector(":scope > .trecho-checkbox")?.click();
+    });
+
     el["btn-comentar-flutuante"].addEventListener("pointerdown", (evento) => evento.preventDefault());
     el["btn-comentar-flutuante"].addEventListener("click", abrirCompositor);
+    el["btn-selecionar-trechos"].addEventListener("click", ativarModoSelecaoTrechos);
+    el["btn-cancelar-selecao-trechos"].addEventListener("click", () => {
+      encerrarModoSelecaoTrechos();
+      el["leitor-viewport"].focus({ preventScroll: true });
+    });
+    el["btn-comentar-trecho-marcado"].addEventListener("click", abrirCompositor);
     el["popup-salvar"].addEventListener("click", salvarComentario);
     el["popup-cancelar"].addEventListener("click", () => fecharPopup(true));
     el["popup-input"].addEventListener("keydown", (evento) => {
@@ -562,6 +721,7 @@
     configurarMicrofone();
 
     document.addEventListener("leitor:renderizado", (evento) => {
+      encerrarModoSelecaoTrechos();
       fecharPopup();
       app.elementos["btn-comentar-flutuante"].hidden = true;
       global.getSelection()?.removeAllRanges();

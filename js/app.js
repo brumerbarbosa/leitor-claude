@@ -2,6 +2,7 @@
   "use strict";
 
   const CHAVE_SIDEBAR = "leitor_sidebar_recolhida";
+  const CHAVE_TEMA = "leitor_tema_claro";
 
   const app = {
     elementos: {},
@@ -19,7 +20,8 @@
       seguindoLeitura: true,
       entradaRecolhida: false,
       sidebarRecolhida: false,
-      vozSelecionada: null
+      vozSelecionada: null,
+      textoCarregado: ""
     }
   };
 
@@ -28,21 +30,23 @@
   function mapearElementos() {
     const ids = [
       "app-frame", "app-sidebar", "app-sidebar-conteudo", "btn-sidebar-toggle",
-      "nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios",
-      "nav-preferencias", "area-trabalho", "entrada-card", "entrada-editor",
-      "entrada-resumo", "entrada-resumo-meta", "btn-editar-texto",
-      "input-texto", "btn-carregar", "btn-direto", "voz-info",
-      "leitura-workspace", "leitor-viewport", "texto-renderizado", "status",
+      "leitura-topbar", "voz-select-topbar", "painel-comentarios-count",
+      "nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-ajustes-mobile",
+      "nav-preferencias", "btn-tema", "tema-label", "menu-ajustes-mobile", "ajuste-velocidade-mobile", "ajuste-velocidade-valor", "ajuste-tema-mobile", "ajuste-tema-titulo", "ajuste-tema-descricao", "area-trabalho", "entrada-card", "entrada-editor",
+      "entrada-resumo", "entrada-resumo-titulo", "entrada-resumo-meta", "btn-editar-texto", "btn-cancelar-edicao",
+      "input-texto", "btn-carregar", "btn-direto", "btn-limpar-texto", "voz-info",
+      "leitura-workspace", "leitura-titulo", "leitor-viewport", "texto-renderizado", "status",
       "bloco-removido", "lista-removida", "toggle-removido",
-      "btn-acompanhar", "acompanhar-label", "painel-lateral",
-      "painel-lateral-conteudo", "btn-fechar-painel", "painel-notas",
+      "btn-acompanhar", "acompanhar-label", "barra-selecao-trechos", "selecao-trechos-status", "btn-cancelar-selecao-trechos", "btn-comentar-trecho-marcado", "painel-lateral",
+      "painel-lateral-conteudo", "btn-fechar-painel", "painel-backdrop", "painel-notas",
       "painel-comentarios", "comentarios-count", "lista-comentarios",
-      "btn-copiar-comentarios", "btn-limpar-comentarios", "copiado-ok",
+      "btn-selecionar-trechos", "btn-copiar-comentarios", "btn-limpar-comentarios", "copiado-ok",
       "btn-comentar-flutuante", "popup-comentario", "popup-quote",
       "popup-input", "popup-salvar", "popup-cancelar", "btn-mic", "notas-box",
       "notas-textarea", "notas-chars", "btn-limpar-notas", "player-fixo",
       "timeline", "tempo-atual", "tempo-total", "player-trecho", "btn-play",
-      "btn-stop", "btn-retroceder", "btn-avancar", "velocidade", "vel-display"
+      "btn-stop", "btn-retroceder", "btn-avancar", "velocidade", "vel-display",
+      "btn-voz-menu", "voz-selecionada-label", "voz-menu", "btn-velocidade-menu", "velocidade-menu"
     ];
 
     ids.forEach((id) => {
@@ -79,6 +83,46 @@
     botao.setAttribute("aria-expanded", String(aberto));
   }
 
+  function definirPainelMovelAberto(aberto) {
+    const el = app.elementos;
+    const modoMovel = global.matchMedia?.("(max-width: 940px)").matches;
+    const mostrar = Boolean(aberto) && Boolean(modoMovel);
+    el["painel-lateral"].classList.toggle("aberto-mobile", mostrar);
+    el["painel-backdrop"].hidden = !mostrar;
+    document.body.classList.toggle("painel-movel-aberto", mostrar);
+  }
+
+  app.modulos.shell = { definirPainelMovelAberto };
+
+  function definirTemaClaro(valor, persistir = true) {
+    const claro = Boolean(valor);
+    const el = app.elementos;
+    document.body.classList.toggle("tema-claro", claro);
+    el["btn-tema"].setAttribute("aria-pressed", String(claro));
+    el["btn-tema"].setAttribute("aria-label", claro ? "Usar tema escuro" : "Usar tema claro");
+    el["btn-tema"].title = claro ? "Usar tema escuro" : "Usar tema claro";
+    el["tema-label"].textContent = claro ? "Tema claro" : "Tema escuro";
+    el["btn-tema"].querySelector("use")?.setAttribute("href", claro ? "#icon-sun" : "#icon-moon");
+    el["ajuste-tema-titulo"].textContent = claro ? "Tema claro" : "Tema escuro";
+    el["ajuste-tema-descricao"].textContent = claro ? "Mudar para tema escuro" : "Mudar para tema claro";
+    el["ajuste-tema-mobile"].querySelector("use")?.setAttribute("href", claro ? "#icon-sun" : "#icon-moon");
+    if (persistir) salvarPreferencia(CHAVE_TEMA, claro);
+  }
+
+  function definirMenuAjustesAberto(aberto) {
+    const el = app.elementos;
+    const mostrar = Boolean(aberto) && Boolean(global.matchMedia?.("(max-width: 640px)").matches);
+    el["menu-ajustes-mobile"].hidden = !mostrar;
+    el["nav-ajustes-mobile"].setAttribute("aria-expanded", String(mostrar));
+    el["nav-ajustes-mobile"].classList.toggle("ativo", mostrar);
+    if (mostrar) {
+      global.requestAnimationFrame(() => {
+        (el["ajuste-velocidade-mobile"].disabled ? el["ajuste-tema-mobile"] : el["ajuste-velocidade-mobile"])
+          .focus({ preventScroll: true });
+      });
+    }
+  }
+
   function definirNavegacaoAtiva(id) {
     ["nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-preferencias"].forEach((navId) => {
       const ativa = navId === id;
@@ -91,12 +135,21 @@
   function definirEntradaRecolhida(valor, focar = false) {
     const el = app.elementos;
     const recolher = Boolean(valor) && app.estado.frases.length > 0;
+    const editandoLeitura = !recolher && app.estado.frases.length > 0;
     app.estado.entradaRecolhida = recolher;
-    el["entrada-card"].classList.toggle("recolhida", recolher);
-    el["entrada-editor"].hidden = recolher;
+    el["entrada-card"].hidden = recolher;
+    el["entrada-editor"].hidden = false;
     el["entrada-resumo"].hidden = !recolher;
+    el["leitura-topbar"].hidden = !recolher;
     el["btn-editar-texto"].setAttribute("aria-expanded", String(!recolher));
-    el["area-trabalho"].classList.toggle("editando-entrada", !recolher && app.estado.frases.length > 0);
+    el["btn-cancelar-edicao"].hidden = !editandoLeitura;
+    el["area-trabalho"].classList.toggle("editando-entrada", editandoLeitura);
+    document.body.classList.toggle("editando-texto", editandoLeitura);
+
+    if (app.estado.frases.length > 0) {
+      el["player-fixo"].hidden = false;
+      document.body.classList.add("com-player");
+    }
 
     if (focar) {
       global.requestAnimationFrame(() => {
@@ -114,6 +167,7 @@
     ["nav-leitura", "nav-notas", "nav-comentarios", "nav-preferencias"].forEach((id) => {
       el[id].disabled = !disponivel;
     });
+    el["ajuste-velocidade-mobile"].disabled = !disponivel;
 
     if (disponivel) {
       const quantidade = app.estado.frases.length;
@@ -126,13 +180,11 @@
     }
   }
 
-  function prepararNovaLeitura(texto, aplicarFiltro) {
+  function prepararNovaLeitura(texto) {
     const el = app.elementos;
     app.modulos.leitor.parar();
 
-    const resultado = aplicarFiltro
-      ? app.modulos.filtro.filtrarLinhas(texto)
-      : { texto, removidas: [] };
+    const resultado = app.modulos.filtro.filtrarLinhas(texto);
 
     if (resultado.removidas.length) {
       el["lista-removida"].innerHTML = resultado.removidas
@@ -146,6 +198,7 @@
     }
 
     app.modulos.renderizador.renderizar(resultado.texto);
+    app.estado.textoCarregado = texto;
     atualizarModoLeitura();
     if (app.estado.frases.length) app.modulos.leitor.tocarDe(0);
   }
@@ -153,13 +206,24 @@
   function configurarCarregamento() {
     const el = app.elementos;
 
-    el["btn-carregar"].addEventListener("click", () => {
-      const texto = el["input-texto"].value.trim();
-      if (!texto) {
-        el["input-texto"].focus();
-        return;
+    el["btn-carregar"].addEventListener("click", async () => {
+      el["btn-carregar"].disabled = true;
+      try {
+        if (!navigator.clipboard?.readText) throw new Error("clipboard-indisponivel");
+        const texto = await navigator.clipboard.readText();
+        if (!texto) {
+          el["input-texto"].focus({ preventScroll: true });
+          return;
+        }
+
+        el["input-texto"].value = texto;
+        el["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+        prepararNovaLeitura(texto.trim());
+      } catch (_) {
+        el["input-texto"].focus({ preventScroll: true });
+      } finally {
+        el["btn-carregar"].disabled = false;
       }
-      prepararNovaLeitura(texto, true);
     });
 
     el["btn-direto"].addEventListener("click", () => {
@@ -168,8 +232,20 @@
         el["input-texto"].focus();
         return;
       }
-      prepararNovaLeitura(texto, false);
+      prepararNovaLeitura(texto);
     });
+
+    const atualizarBotaoLimparTexto = () => {
+      el["btn-limpar-texto"].disabled = el["input-texto"].value.length === 0;
+    };
+
+    el["input-texto"].addEventListener("input", atualizarBotaoLimparTexto);
+    el["btn-limpar-texto"].addEventListener("click", () => {
+      el["input-texto"].value = "";
+      el["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+      el["input-texto"].focus({ preventScroll: true });
+    });
+    atualizarBotaoLimparTexto();
 
     el["toggle-removido"].addEventListener("click", () => {
       const aberto = el["lista-removida"].style.display !== "none";
@@ -182,25 +258,34 @@
       definirEntradaRecolhida(false, true);
       definirNavegacaoAtiva("nav-nova-leitura");
     });
+
+    el["btn-cancelar-edicao"].addEventListener("click", () => {
+      el["input-texto"].value = app.estado.textoCarregado;
+      el["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+      definirEntradaRecolhida(true, true);
+      definirNavegacaoAtiva("nav-leitura");
+    });
   }
 
   function configurarShell() {
     const el = app.elementos;
     const estadoSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_SIDEBAR, false);
+    const temaClaroSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_TEMA, false);
     definirSidebarRecolhida(Boolean(estadoSalvo), false);
+    definirTemaClaro(Boolean(temaClaroSalvo), false);
 
     el["btn-sidebar-toggle"].addEventListener("click", () => {
       definirSidebarRecolhida(!app.estado.sidebarRecolhida);
     });
 
     el["nav-nova-leitura"].addEventListener("click", () => {
-      el["painel-lateral"].classList.remove("aberto-mobile");
+      definirPainelMovelAberto(false);
       definirEntradaRecolhida(false, true);
       definirNavegacaoAtiva("nav-nova-leitura");
     });
 
     el["nav-leitura"].addEventListener("click", () => {
-      el["painel-lateral"].classList.remove("aberto-mobile");
+      definirPainelMovelAberto(false);
       definirEntradaRecolhida(true, true);
       definirNavegacaoAtiva("nav-leitura");
     });
@@ -216,27 +301,66 @@
     });
 
     el["nav-preferencias"].addEventListener("click", () => {
-      el["painel-lateral"].classList.remove("aberto-mobile");
+      definirPainelMovelAberto(false);
       definirNavegacaoAtiva("nav-preferencias");
-      el.velocidade.focus({ preventScroll: true });
+      app.modulos.leitor.abrirMenuVelocidade();
       el["player-fixo"].classList.add("realce-preferencias");
       el.status.textContent = "Preferências de velocidade disponíveis no player.";
       global.setTimeout(() => el["player-fixo"].classList.remove("realce-preferencias"), 1200);
     });
 
+    el["btn-tema"].addEventListener("click", () => definirTemaClaro(!document.body.classList.contains("tema-claro")));
+
+    el["nav-ajustes-mobile"].addEventListener("click", (evento) => {
+      evento.stopPropagation();
+      definirPainelMovelAberto(false);
+      definirMenuAjustesAberto(el["menu-ajustes-mobile"].hidden);
+    });
+
+    el["ajuste-velocidade-mobile"].addEventListener("click", () => {
+      definirMenuAjustesAberto(false);
+      app.modulos.leitor.abrirMenuVelocidade();
+    });
+
+    el["ajuste-tema-mobile"].addEventListener("click", () => {
+      definirTemaClaro(!document.body.classList.contains("tema-claro"));
+    });
+
+    document.addEventListener("pointerdown", (evento) => {
+      if (el["menu-ajustes-mobile"].hidden) return;
+      if (el["menu-ajustes-mobile"].contains(evento.target) || el["nav-ajustes-mobile"].contains(evento.target)) return;
+      definirMenuAjustesAberto(false);
+    });
+
     el["btn-fechar-painel"].addEventListener("click", () => {
-      el["painel-lateral"].classList.remove("aberto-mobile");
+      definirPainelMovelAberto(false);
+      el["nav-leitura"].focus();
+      definirNavegacaoAtiva("nav-leitura");
+    });
+
+    el["painel-backdrop"].addEventListener("click", () => {
+      definirPainelMovelAberto(false);
       el["nav-leitura"].focus();
       definirNavegacaoAtiva("nav-leitura");
     });
 
     document.addEventListener("keydown", (evento) => {
+      if (evento.key === "Escape" && !el["menu-ajustes-mobile"].hidden) {
+        definirMenuAjustesAberto(false);
+        el["nav-ajustes-mobile"].focus();
+        return;
+      }
       const painelMovelAberto = global.matchMedia?.("(max-width: 940px)").matches
         && el["painel-lateral"].classList.contains("aberto-mobile");
       if (evento.key !== "Escape" || !painelMovelAberto) return;
-      el["painel-lateral"].classList.remove("aberto-mobile");
+      definirPainelMovelAberto(false);
       el["nav-leitura"].focus();
       definirNavegacaoAtiva("nav-leitura");
+    });
+
+    global.addEventListener("resize", () => {
+      if (!global.matchMedia?.("(max-width: 940px)").matches) definirPainelMovelAberto(false);
+      if (!global.matchMedia?.("(max-width: 640px)").matches) definirMenuAjustesAberto(false);
     });
   }
 

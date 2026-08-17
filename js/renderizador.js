@@ -312,11 +312,17 @@
     fecharListas();
     el["texto-renderizado"].innerHTML = partesHtml.join("");
 
+    const primeiroTitulo = el["texto-renderizado"].querySelector("h1, h2, h3, h4")?.textContent.trim();
+    const tituloLeitura = primeiroTitulo || estado.frases[0]?.slice(0, 72) || "Texto preparado";
+    el["entrada-resumo-titulo"].textContent = tituloLeitura;
+    el["leitura-titulo"].textContent = tituloLeitura;
+
     el["texto-renderizado"].querySelectorAll("[data-elid]").forEach((elemento) => {
       elemento.style.cursor = "pointer";
       elemento.title = "Clique para ouvir daqui";
       elemento.addEventListener("click", (evento) => {
-        if (evento.target.closest("mark")) return;
+        if (evento.target.closest("mark, .trecho-checkbox")) return;
+        if (el["texto-renderizado"].classList.contains("modo-selecao-trechos")) return;
         const selecao = global.getSelection();
         if (selecao && !selecao.isCollapsed) return;
 

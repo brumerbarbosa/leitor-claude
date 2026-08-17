@@ -39,8 +39,9 @@
     const el = app.elementos;
     const comentarios = nome === "comentarios";
     const secao = comentarios ? el["painel-comentarios"] : el["painel-notas"];
-    el["painel-lateral"].classList.add("aberto-mobile");
     el["painel-lateral"].dataset.secaoAtiva = comentarios ? "comentarios" : "notas";
+
+    if (global.matchMedia?.("(max-width: 940px)").matches) app.modulos.shell?.definirPainelMovelAberto(true);
 
     global.requestAnimationFrame(() => {
       rolarSecaoNoPainel(secao);
