@@ -65,10 +65,10 @@
   function definirSidebarRecolhida(valor, persistir = true) {
     const recolhida = Boolean(valor);
     const el = app.elementos;
-    const iconeToggle = el["btn-sidebar-toggle"].querySelector("use");
+    const iconeToggle = el["btn-sidebar-toggle"].querySelector(".icone");
     app.estado.sidebarRecolhida = recolhida;
     el["app-frame"].classList.toggle("sidebar-recolhida", recolhida);
-    iconeToggle?.setAttribute("href", recolhida ? "#icon-chevron-right" : "#icon-chevron-left");
+    iconeToggle?.setAttribute("data-icon", recolhida ? "chevron-right" : "chevron-left");
     el["btn-sidebar-toggle"].setAttribute("aria-expanded", String(!recolhida));
     el["btn-sidebar-toggle"].setAttribute("aria-label", recolhida ? "Expandir menu" : "Recolher menu");
     el["btn-sidebar-logo"].setAttribute("aria-expanded", String(!recolhida));
@@ -77,7 +77,7 @@
 
   function atualizarBotaoRemovidos(aberto, quantidade) {
     const botao = app.elementos["toggle-removido"];
-    botao.querySelector("use")?.setAttribute("href", aberto ? "#icon-chevron-down" : "#icon-chevron-right");
+    botao.querySelector(".icone")?.setAttribute("data-icon", aberto ? "chevron-down" : "chevron-right");
     botao.querySelector("span").textContent = aberto
       ? "ocultar linhas removidas"
       : `ver ${quantidade} linha(s) removida(s)`;
@@ -103,16 +103,16 @@
     el["btn-tema"].setAttribute("aria-label", claro ? "Usar tema escuro" : "Usar tema claro");
     el["btn-tema"].title = claro ? "Usar tema escuro" : "Usar tema claro";
     el["tema-label"].textContent = claro ? "Tema claro" : "Tema escuro";
-    el["btn-tema"].querySelector("use")?.setAttribute("href", claro ? "#icon-sun" : "#icon-moon");
+    el["btn-tema"].querySelector(".icone")?.setAttribute("data-icon", claro ? "sun" : "moon");
     el["ajuste-tema-titulo"].textContent = claro ? "Tema claro" : "Tema escuro";
     el["ajuste-tema-descricao"].textContent = claro ? "Mudar para tema escuro" : "Mudar para tema claro";
-    el["ajuste-tema-mobile"].querySelector("use")?.setAttribute("href", claro ? "#icon-sun" : "#icon-moon");
+    el["ajuste-tema-mobile"].querySelector(".icone")?.setAttribute("data-icon", claro ? "sun" : "moon");
     if (persistir) salvarPreferencia(CHAVE_TEMA, claro);
   }
 
   function definirMenuAjustesAberto(aberto) {
     const el = app.elementos;
-    const mostrar = Boolean(aberto) && Boolean(global.matchMedia?.("(max-width: 640px)").matches);
+    const mostrar = Boolean(aberto) && Boolean(global.matchMedia?.("(max-width: 940px)").matches);
     el["menu-ajustes-mobile"].hidden = !mostrar;
     el["nav-ajustes-mobile"].setAttribute("aria-expanded", String(mostrar));
     el["nav-ajustes-mobile"].classList.toggle("ativo", mostrar);
@@ -379,7 +379,7 @@
 
     global.addEventListener("resize", () => {
       if (!global.matchMedia?.("(max-width: 940px)").matches) definirPainelMovelAberto(false);
-      if (!global.matchMedia?.("(max-width: 640px)").matches) definirMenuAjustesAberto(false);
+      if (!global.matchMedia?.("(max-width: 940px)").matches) definirMenuAjustesAberto(false);
     });
   }
 

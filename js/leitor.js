@@ -255,7 +255,7 @@
     el["btn-retroceder"].disabled = !disponivel || estado.indiceAtual <= 0;
     el["btn-avancar"].disabled = !disponivel || estado.indiceAtual >= estado.frases.length - 1;
 
-    el["btn-play"].querySelector("use")?.setAttribute("href", tocando ? "#icon-pause" : "#icon-play");
+    el["btn-play"].querySelector(".icone")?.setAttribute("data-icon", tocando ? "pause" : "play");
     el["btn-play"].setAttribute("aria-label", tocando ? "Pausar" : (estado.finalizado ? "Reproduzir novamente" : "Reproduzir"));
     el["btn-play"].title = tocando ? "Pausar" : "Reproduzir";
   }

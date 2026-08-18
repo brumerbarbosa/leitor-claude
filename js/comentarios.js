@@ -254,7 +254,7 @@
           <span class="ci-quote">${app.modulos.seguranca.escaparHtml(comentario.quote)}</span>
           <span class="ci-texto">${app.modulos.seguranca.escaparHtml(comentario.comment)}</span>
         </button>
-        <button type="button" class="ci-apagar" data-id="${comentario.id}" aria-label="Apagar comentário sobre: ${app.modulos.seguranca.escaparHtml(comentario.quote.slice(0, 80))}"><svg class="icone icone-pequeno" aria-hidden="true"><use href="#icon-trash"></use></svg></button>
+        <button type="button" class="ci-apagar" data-id="${comentario.id}" aria-label="Apagar comentário sobre: ${app.modulos.seguranca.escaparHtml(comentario.quote.slice(0, 80))}"><i class="icone icone-pequeno" data-icon="trash" aria-hidden="true"></i></button>
       </div>
     `).join("");
 
