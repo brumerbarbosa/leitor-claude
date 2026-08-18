@@ -32,7 +32,7 @@
       "app-frame", "app-sidebar", "app-sidebar-conteudo", "btn-sidebar-toggle", "btn-sidebar-logo",
       "leitura-topbar", "voz-select-topbar", "painel-comentarios-count",
       "nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-ajustes-mobile",
-      "nav-preferencias", "btn-tema", "tema-label", "menu-ajustes-mobile", "ajuste-velocidade-mobile", "ajuste-velocidade-valor", "ajuste-tema-mobile", "ajuste-tema-titulo", "ajuste-tema-descricao", "area-trabalho", "entrada-card", "entrada-editor",
+      "nav-preferencias", "menu-ajustes-mobile", "ajuste-velocidade-mobile", "ajuste-velocidade-valor", "ajuste-tema-mobile", "ajuste-tema-titulo", "ajuste-tema-descricao", "area-trabalho", "entrada-card", "entrada-editor",
       "entrada-resumo", "entrada-resumo-titulo", "entrada-resumo-meta", "btn-editar-texto", "btn-cancelar-edicao",
       "input-texto", "btn-carregar", "btn-direto", "btn-limpar-texto", "btn-voz-editor", "voz-info",
       "leitura-workspace", "leitura-titulo", "leitor-viewport", "texto-renderizado", "status",
@@ -46,6 +46,7 @@
       "notas-textarea", "notas-chars", "btn-limpar-notas", "player-fixo",
       "timeline", "tempo-atual", "tempo-total", "player-trecho", "btn-play",
       "btn-stop", "btn-retroceder", "btn-avancar", "velocidade", "vel-display",
+      "btn-volume", "volume-popup", "volume-slider", "volume-valor",
       "btn-voz-menu", "voz-selecionada-label", "voz-menu", "btn-velocidade-menu", "velocidade-menu"
     ];
 
@@ -99,11 +100,6 @@
     const claro = Boolean(valor);
     const el = app.elementos;
     document.body.classList.toggle("tema-claro", claro);
-    el["btn-tema"].setAttribute("aria-pressed", String(claro));
-    el["btn-tema"].setAttribute("aria-label", claro ? "Usar tema escuro" : "Usar tema claro");
-    el["btn-tema"].title = claro ? "Usar tema escuro" : "Usar tema claro";
-    el["tema-label"].textContent = claro ? "Tema claro" : "Tema escuro";
-    el["btn-tema"].querySelector(".icone")?.setAttribute("data-icon", claro ? "sun" : "moon");
     el["ajuste-tema-titulo"].textContent = claro ? "Tema claro" : "Tema escuro";
     el["ajuste-tema-descricao"].textContent = claro ? "Mudar para tema escuro" : "Mudar para tema claro";
     el["ajuste-tema-mobile"].querySelector(".icone")?.setAttribute("data-icon", claro ? "sun" : "moon");
@@ -112,10 +108,12 @@
 
   function definirMenuAjustesAberto(aberto) {
     const el = app.elementos;
-    const mostrar = Boolean(aberto) && Boolean(global.matchMedia?.("(max-width: 940px)").matches);
+    const mostrar = Boolean(aberto);
     el["menu-ajustes-mobile"].hidden = !mostrar;
     el["nav-ajustes-mobile"].setAttribute("aria-expanded", String(mostrar));
+    el["nav-preferencias"].setAttribute("aria-expanded", String(mostrar));
     el["nav-ajustes-mobile"].classList.toggle("ativo", mostrar);
+    el["nav-preferencias"].classList.toggle("ativo", mostrar);
     if (mostrar) {
       global.requestAnimationFrame(() => {
         (el["ajuste-velocidade-mobile"].disabled ? el["ajuste-tema-mobile"] : el["ajuste-velocidade-mobile"])
@@ -165,7 +163,7 @@
     el["leitura-workspace"].hidden = !disponivel;
     el["painel-lateral"].hidden = !disponivel;
     el["area-trabalho"].classList.toggle("tem-leitura", disponivel);
-    ["nav-leitura", "nav-notas", "nav-comentarios", "nav-preferencias"].forEach((id) => {
+    ["nav-leitura", "nav-notas", "nav-comentarios"].forEach((id) => {
       el[id].disabled = !disponivel;
     });
     el["ajuste-velocidade-mobile"].disabled = !disponivel;
@@ -321,14 +319,8 @@
 
     el["nav-preferencias"].addEventListener("click", () => {
       definirPainelMovelAberto(false);
-      definirNavegacaoAtiva("nav-preferencias");
-      app.modulos.leitor.abrirMenuVelocidade();
-      el["player-fixo"].classList.add("realce-preferencias");
-      el.status.textContent = "Preferências de velocidade disponíveis no player.";
-      global.setTimeout(() => el["player-fixo"].classList.remove("realce-preferencias"), 1200);
+      definirMenuAjustesAberto(el["menu-ajustes-mobile"].hidden);
     });
-
-    el["btn-tema"].addEventListener("click", () => definirTemaClaro(!document.body.classList.contains("tema-claro")));
 
     el["nav-ajustes-mobile"].addEventListener("click", (evento) => {
       evento.stopPropagation();
@@ -347,7 +339,7 @@
 
     document.addEventListener("pointerdown", (evento) => {
       if (el["menu-ajustes-mobile"].hidden) return;
-      if (el["menu-ajustes-mobile"].contains(evento.target) || el["nav-ajustes-mobile"].contains(evento.target)) return;
+      if (el["menu-ajustes-mobile"].contains(evento.target) || el["nav-ajustes-mobile"].contains(evento.target) || el["nav-preferencias"].contains(evento.target)) return;
       definirMenuAjustesAberto(false);
     });
 
@@ -366,7 +358,10 @@
     document.addEventListener("keydown", (evento) => {
       if (evento.key === "Escape" && !el["menu-ajustes-mobile"].hidden) {
         definirMenuAjustesAberto(false);
-        el["nav-ajustes-mobile"].focus();
+        const gatilhoVisivel = el["nav-ajustes-mobile"].getClientRects().length
+          ? el["nav-ajustes-mobile"]
+          : el["nav-preferencias"];
+        gatilhoVisivel.focus();
         return;
       }
       const painelMovelAberto = global.matchMedia?.("(max-width: 940px)").matches
@@ -379,7 +374,6 @@
 
     global.addEventListener("resize", () => {
       if (!global.matchMedia?.("(max-width: 940px)").matches) definirPainelMovelAberto(false);
-      if (!global.matchMedia?.("(max-width: 940px)").matches) definirMenuAjustesAberto(false);
     });
   }
 
@@ -387,7 +381,7 @@
     document.addEventListener("keydown", (evento) => {
       const alvo = evento.target;
       const editavel = alvo instanceof HTMLElement && (
-        alvo.matches("button, input, select, textarea, [contenteditable='true']") ||
+        alvo.matches("button, input, select, textarea, [contenteditable='true'], [role='button']") ||
         Boolean(alvo.closest("[contenteditable='true']"))
       );
 

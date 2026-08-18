@@ -5,12 +5,18 @@
   let prefereMovimentoReduzido = false;
 
   function processarInline(texto) {
+    /* O código sai primeiro para que `_` e `*` internos não virem ênfase. */
+    const codigos = [];
     return app.modulos.seguranca.escaparHtml(texto)
+      .replace(/`([^`\n]+)`/g, (_, codigo) => {
+        codigos.push(codigo);
+        return `${codigos.length - 1}`;
+      })
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/`([^`\n]+)`/g, "<code>$1</code>")
       .replace(/__(.+?)__/g, "<strong>$1</strong>")
-      .replace(/_([^_]+)_/g, "<em>$1</em>");
+      .replace(/_([^_]+)_/g, "<em>$1</em>")
+      .replace(/(\d+)/g, (_, indice) => `<code>${codigos[Number(indice)]}</code>`);
   }
 
   function processarTokenCodigo(codigo) {

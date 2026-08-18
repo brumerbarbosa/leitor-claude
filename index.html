@@ -57,13 +57,9 @@
         </nav>
 
         <div class="sidebar-rodape">
-          <button type="button" id="nav-preferencias" class="sidebar-item" title="Preferências de leitura" aria-label="Preferências de leitura" disabled>
+          <button type="button" id="nav-preferencias" class="sidebar-item" title="Configurações" aria-label="Abrir configurações" aria-haspopup="menu" aria-expanded="false">
             <span class="sidebar-icone" aria-hidden="true"><i class="icone" data-icon="settings" aria-hidden="true"></i></span>
-            <span class="sidebar-label">Preferências</span>
-          </button>
-          <button type="button" id="btn-tema" class="sidebar-tema" title="Usar tema claro" aria-label="Usar tema claro" aria-pressed="false">
-            <span class="sidebar-icone" aria-hidden="true"><i class="icone" data-icon="moon" aria-hidden="true"></i></span>
-            <span class="sidebar-label" id="tema-label">Tema escuro</span>
+            <span class="sidebar-label">Configurações</span>
           </button>
         </div>
       </div>
@@ -79,7 +75,7 @@
             <span id="entrada-resumo-meta">Texto preparado para leitura</span>
           </div>
           <div class="topbar-acoes">
-            <button type="button" id="btn-editar-texto" aria-label="Alterar texto" aria-controls="entrada-editor" aria-expanded="false"><span>Alterar texto</span><i class="icone btn-editar-icone" data-icon="pencil" aria-hidden="true"></i></button>
+            <button type="button" id="btn-editar-texto" aria-label="Alterar texto" aria-controls="entrada-editor" aria-expanded="false"><i class="icone btn-editar-icone" data-icon="pencil" aria-hidden="true"></i><span>Alterar texto</span></button>
             <div class="topbar-voz" title="Escolher voz da leitura">
               <span class="topbar-voz-dot" aria-hidden="true"></span>
               <select id="voz-select-topbar" class="select-fonte" aria-hidden="true" tabindex="-1" hidden>
@@ -113,9 +109,9 @@
                 <textarea id="input-texto" placeholder="Cole aqui a mensagem do Claude Code..."></textarea>
                 <div class="acoes-carregamento">
                   <div class="botoes-carregamento">
-                    <button type="button" id="btn-carregar" class="btn-com-icone"><i class="icone" data-icon="clipboard-plus" aria-hidden="true"></i><span>Colar<span class="rotulo-complemento"> e ouvir</span></span></button>
-                    <button type="button" id="btn-direto" class="btn-com-icone"><i class="icone" data-icon="play" aria-hidden="true"></i><span>Ouvir</span></button>
-                    <button type="button" id="btn-limpar-texto" class="btn-com-icone" disabled><i class="icone icone-pequeno" data-icon="trash" aria-hidden="true"></i><span>Limpar<span class="rotulo-complemento"> texto</span></span></button>
+                    <button type="button" id="btn-carregar" class="btn-com-icone" aria-label="Colar e ouvir" title="Colar e ouvir"><i class="icone" data-icon="clipboard-plus" aria-hidden="true"></i><span>Colar<span class="rotulo-complemento"> e ouvir</span></span></button>
+                    <button type="button" id="btn-direto" class="btn-com-icone" aria-label="Ouvir o texto inserido" title="Ouvir o texto inserido"><i class="icone" data-icon="play" aria-hidden="true"></i><span>Ouvir</span></button>
+                    <button type="button" id="btn-limpar-texto" class="btn-com-icone" aria-label="Limpar texto" title="Limpar texto" disabled><i class="icone icone-pequeno" data-icon="trash" aria-hidden="true"></i><span>Limpar<span class="rotulo-complemento"> texto</span></span></button>
                     <button type="button" id="btn-voz-editor" class="btn-com-icone" aria-label="Escolher voz" aria-haspopup="listbox" aria-expanded="false" aria-controls="voz-menu"><i class="icone" data-icon="audio-waveform" aria-hidden="true"></i><span>Voz</span><i class="icone icone-pequeno seletor-chevron" data-icon="chevron-down" aria-hidden="true"></i></button>
                   </div>
                   <div id="voz-info" class="sr-only" aria-live="polite">Carregando vozes...</div>
@@ -237,6 +233,7 @@
             <button type="button" id="btn-retroceder" class="player-btn" disabled title="Trecho anterior" aria-label="Voltar ao trecho anterior"><i class="icone" data-icon="skip-back" aria-hidden="true"></i></button>
             <button type="button" id="btn-play" class="player-btn player-btn-play" disabled aria-label="Reproduzir"><i class="icone" data-icon="play" aria-hidden="true"></i></button>
             <button type="button" id="btn-avancar" class="player-btn" disabled title="Próximo trecho" aria-label="Avançar para o próximo trecho"><i class="icone" data-icon="skip-forward" aria-hidden="true"></i></button>
+            <button type="button" id="btn-volume" class="player-btn player-btn-secundario" title="Volume da leitura" aria-label="Volume da leitura" aria-haspopup="dialog" aria-expanded="false" aria-controls="volume-popup"><i class="icone" data-icon="volume" aria-hidden="true"></i></button>
           </div>
 
           <div class="velocidade-controle">
@@ -263,10 +260,17 @@
 
   <div id="voz-menu" class="menu-contexto menu-contexto-voz" role="listbox" aria-label="Vozes disponíveis" hidden></div>
 
-  <div id="menu-ajustes-mobile" class="menu-contexto menu-ajustes-mobile" role="menu" aria-label="Ajustes da leitura" hidden>
+  <div id="volume-popup" class="menu-contexto menu-contexto-volume" role="dialog" aria-label="Volume da leitura" hidden>
+    <i class="icone icone-pequeno" data-icon="volume" aria-hidden="true"></i>
+    <label class="sr-only" for="volume-slider">Volume da leitura</label>
+    <input type="range" id="volume-slider" min="0" max="100" step="5" value="100">
+    <span id="volume-valor" aria-hidden="true">100%</span>
+  </div>
+
+  <div id="menu-ajustes-mobile" class="menu-contexto menu-ajustes-mobile" role="menu" aria-label="Configurações" hidden>
     <div class="menu-contexto-cabecalho">
-      <span>Ajustes</span>
-      <small>Preferências da leitura</small>
+      <span>Configurações</span>
+      <small>Preferências do aplicativo</small>
     </div>
     <button type="button" id="ajuste-velocidade-mobile" class="menu-ajuste-item" role="menuitem" disabled>
       <span class="menu-ajuste-icone" aria-hidden="true"><i class="icone" data-icon="settings" aria-hidden="true"></i></span>

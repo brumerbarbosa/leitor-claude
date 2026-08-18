@@ -4,6 +4,12 @@
   const sintese = global.speechSynthesis;
   const PALAVRAS_POR_MINUTO = 165;
   const CHAVE_VOZ = "leitor_voz_preferida";
+  const CHAVE_VOLUME = "leitor_volume";
+  /* No Chrome, um pause() prolongado descarta a fala e o resume() volta mudo. */
+  const LIMITE_PAUSA_MS = 10000;
+  let momentoPausa = 0;
+  let watchdogRetomada = 0;
+  let volumeAtual = 1;
   let execucaoAtual = 0;
   let pesosAcumulados = [0];
   let timelineEmInteracao = false;
@@ -332,6 +338,7 @@
     const texto = estado.frases[indice];
     const fala = new SpeechSynthesisUtterance(texto);
     fala.rate = obterVelocidade();
+    fala.volume = volumeAtual;
     fala.lang = "pt-BR";
     if (estado.vozSelecionada) fala.voice = estado.vozSelecionada;
 
@@ -378,6 +385,7 @@
 
   function parar() {
     execucaoAtual++;
+    global.clearTimeout(watchdogRetomada);
     app.estado.reproduzindo = false;
     app.estado.emPausa = false;
     app.estado.finalizado = false;
@@ -398,18 +406,30 @@
     if (!sintese || !estado.frases.length) return;
 
     if (estado.reproduzindo && !estado.emPausa) {
+      global.clearTimeout(watchdogRetomada);
       sintese.pause();
       estado.emPausa = true;
+      momentoPausa = Date.now();
       atualizarControles();
       app.elementos.status.textContent = `Pausado no trecho ${estado.indiceAtual + 1}.`;
       return;
     }
 
     if (estado.reproduzindo && estado.emPausa) {
+      global.clearTimeout(watchdogRetomada);
+      if (Date.now() - momentoPausa > LIMITE_PAUSA_MS) {
+        tocarDe(estado.indiceAtual);
+        return;
+      }
       sintese.resume();
       estado.emPausa = false;
       atualizarControles();
       app.elementos.status.textContent = `Lendo trecho ${estado.indiceAtual + 1} de ${estado.frases.length}.`;
+      watchdogRetomada = global.setTimeout(() => {
+        if (estado.reproduzindo && !estado.emPausa && !sintese.speaking) {
+          tocarDe(estado.indiceAtual);
+        }
+      }, 600);
       return;
     }
 
@@ -586,6 +606,57 @@
     });
   }
 
+  function posicionarPopupVolume() {
+    /* Flutua acima do player, centralizado, como o botão Sincronizar. */
+    const popup = app.elementos["volume-popup"];
+    const margem = 12;
+    const caixaPlayer = app.elementos["player-fixo"].getBoundingClientRect();
+    const esquerda = Math.max(margem, Math.min(
+      global.innerWidth - popup.offsetWidth - margem,
+      (global.innerWidth - popup.offsetWidth) / 2
+    ));
+    popup.style.left = `${esquerda}px`;
+    popup.style.top = `${Math.max(margem, caixaPlayer.top - popup.offsetHeight - 12)}px`;
+  }
+
+  function configurarVolume() {
+    const el = app.elementos;
+    const slider = el["volume-slider"];
+
+    const salvo = Number(app.modulos.seguranca.lerJsonLocal(CHAVE_VOLUME, 1));
+    volumeAtual = Number.isFinite(salvo) ? Math.max(0, Math.min(salvo, 1)) : 1;
+
+    function atualizarInterfaceVolume() {
+      const percentual = Math.round(volumeAtual * 100);
+      slider.value = String(percentual);
+      slider.style.setProperty("--progresso", `${percentual}%`);
+      slider.setAttribute("aria-valuetext", `${percentual}%`);
+      el["volume-valor"].textContent = `${percentual}%`;
+      el["btn-volume"].title = `Volume da leitura: ${percentual}%`;
+      el["btn-volume"].setAttribute("aria-label", `Volume da leitura: ${percentual}%`);
+    }
+    atualizarInterfaceVolume();
+
+    el["btn-volume"].addEventListener("click", () => {
+      abrirMenuContexto(el["volume-popup"], el["btn-volume"], true);
+      if (!el["volume-popup"].hidden) {
+        posicionarPopupVolume();
+        slider.focus({ preventScroll: true });
+      }
+    });
+
+    slider.addEventListener("input", () => {
+      volumeAtual = Math.max(0, Math.min(Number(slider.value) / 100, 1));
+      atualizarInterfaceVolume();
+      try { localStorage.setItem(CHAVE_VOLUME, JSON.stringify(volumeAtual)); } catch (_) { /* armazenamento indisponível */ }
+    });
+
+    slider.addEventListener("change", () => {
+      /* O volume só entra na próxima fala; reiniciar o trecho aplica na hora. */
+      if (app.estado.reproduzindo && !app.estado.emPausa) tocarDe(app.estado.indiceAtual);
+    });
+  }
+
   function inicializar() {
     const el = app.elementos;
 
@@ -598,6 +669,7 @@
       el["voz-selecionada-label"].textContent = "Leitura indisponível";
       el["btn-carregar"].disabled = true;
       el["btn-direto"].disabled = true;
+      el["btn-volume"].disabled = true;
       return;
     }
 
@@ -608,6 +680,7 @@
     configurarTimeline();
     configurarVelocidade();
     configurarVoz();
+    configurarVolume();
 
     document.addEventListener("pointerdown", (evento) => {
       if (!menuContextoAberto) return;
@@ -621,6 +694,8 @@
       gatilho?.focus({ preventScroll: true });
     });
     global.addEventListener("resize", fecharMenuContexto);
+    /* A síntese vive fora da página; sem isso o Chrome segue falando após fechar ou recarregar. */
+    global.addEventListener("pagehide", () => sintese.cancel());
 
     sintese.onvoiceschanged = carregarVozes;
     carregarVozes();
