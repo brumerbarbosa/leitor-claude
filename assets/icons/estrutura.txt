@@ -1,0 +1,29 @@
+assets/
+└── icons/
+    ├── audio-waveform.svg
+    ├── chevron-down.svg
+    ├── chevron-left.svg
+    ├── chevron-right.svg
+    ├── clipboard-plus.svg
+    ├── copy.svg
+    ├── headphones.svg
+    ├── info.svg
+    ├── message-plus.svg
+    ├── message-quote.svg
+    ├── microphone.svg
+    ├── moon.svg
+    ├── notebook-pen.svg
+    ├── pause.svg
+    ├── pencil.svg
+    ├── play.svg
+    ├── plus.svg
+    ├── refresh-cw.svg
+    ├── settings.svg
+    ├── skip-back.svg
+    ├── skip-forward.svg
+    ├── square-check.svg
+    ├── stop.svg
+    ├── sun.svg
+    ├── trash.svg
+    ├── x.svg
+    └── icon-leitor-claude.svg
