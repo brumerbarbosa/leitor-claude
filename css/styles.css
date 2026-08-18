@@ -1958,12 +1958,12 @@ body.com-player {
   --cor-superficie-suave: #181e34;
   --cor-borda: #29314e;
   --cor-borda-forte: #394263;
-  --cor-primaria: #9c8cff;
-  --cor-primaria-forte: #8a79ff;
+  --cor-primaria: #6c5ce7;
+  --cor-primaria-forte: #5b4bd6;
   --cor-texto: #f4f2ff;
   --cor-texto-forte: #ffffff;
   --cor-texto-suave: #aaafc8;
-  --cor-info: #9c8cff;
+  --cor-info: #6c5ce7;
   --cor-sucesso: #43d9c5;
   --cor-alerta: #f2c96d;
   --raio-pequeno: 8px;
@@ -2248,7 +2248,7 @@ body {
 }
 
 .entrada-card .secao-cabecalho h2 {
-  margin-top: 4px;
+  margin-top: 0;
   font-size: 24px;
   line-height: 30px;
 }
@@ -2846,10 +2846,10 @@ body {
     height: 19px;
   }
 
-  #nav-leitura { order: 1; }
+  #nav-nova-leitura { order: 1; }
   #nav-notas { order: 2; }
   #nav-comentarios { order: 3; }
-  #nav-nova-leitura { order: 4; }
+  #nav-leitura { order: 4; }
 
   .leitura-topbar,
   .entrada-resumo {
@@ -3731,9 +3731,9 @@ body {
 }
 
 #btn-editar-texto:hover {
-  border-color: #afa2ff;
-  background: #afa2ff;
-  color: #090d19;
+  border-color: #7c6df0;
+  background: #7c6df0;
+  color: #fff;
 }
 
 .entrada-cabecalho-acoes {
@@ -4324,5 +4324,845 @@ body.tema-claro .app-sidebar {
   body.tema-claro .app-sidebar {
     border-top-color: #d7dceb;
     background: #ffffff;
+  }
+}
+
+/* Consolidação visual e responsiva da revisão atual */
+.app-sidebar .marca {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+  text-align: left;
+}
+
+#btn-voz-menu,
+#btn-voz-editor {
+  min-height: 44px;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid #394263;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cor-texto-suave);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.topbar-voz {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+}
+
+.topbar-voz-dot {
+  display: none;
+}
+
+.topbar-voz-label {
+  overflow: visible;
+}
+
+#btn-voz-editor .seletor-chevron {
+  margin-left: 2px;
+}
+
+.acoes-carregamento {
+  display: block;
+}
+
+.botoes-carregamento {
+  display: flex;
+}
+
+#input-texto {
+  overflow: auto;
+  resize: vertical;
+  scrollbar-color: #59617d #171c2d;
+  scrollbar-width: thin;
+}
+
+#input-texto:focus,
+#input-texto:focus-visible {
+  border-color: var(--cor-primaria);
+  outline: 0;
+  box-shadow: 0 0 0 1px var(--cor-primaria);
+}
+
+#input-texto::-webkit-scrollbar,
+#leitor-viewport::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+#input-texto::-webkit-scrollbar-track,
+#leitor-viewport::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #171c2d;
+}
+
+#input-texto::-webkit-scrollbar-thumb,
+#leitor-viewport::-webkit-scrollbar-thumb {
+  border: 2px solid #171c2d;
+  border-radius: 999px;
+  background: #59617d;
+}
+
+#input-texto::-webkit-scrollbar-thumb:hover,
+#leitor-viewport::-webkit-scrollbar-thumb:hover {
+  background: #747d9d;
+}
+
+#leitor-viewport {
+  scrollbar-color: #59617d #171c2d;
+}
+
+body.editando-texto #player-fixo:not([hidden]) {
+  display: block;
+}
+
+/* Durante a edição no desktop, o player precisa permanecer sempre no viewport. */
+@media (min-width: 941px) {
+  body.editando-texto .app-shell {
+    padding-bottom: calc(var(--altura-player) + 28px);
+  }
+
+  body.editando-texto #player-fixo {
+    position: fixed;
+    z-index: 25;
+    right: 0;
+    bottom: 0;
+    left: var(--largura-sidebar);
+    width: auto;
+  }
+
+  body.editando-texto .app-frame.sidebar-recolhida #player-fixo {
+    left: var(--largura-sidebar-recolhida);
+  }
+}
+
+@media (min-width: 641px) and (max-width: 940px) {
+  :root {
+    --largura-sidebar: 224px;
+    --largura-sidebar-recolhida: 76px;
+  }
+
+  .app-frame,
+  .app-frame:not(.sidebar-recolhida) {
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .app-frame.sidebar-recolhida {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .app-sidebar,
+  .app-frame:not(.sidebar-recolhida) .app-sidebar {
+    align-items: stretch;
+    padding: 20px 12px;
+  }
+
+  .sidebar-header,
+  .app-frame:not(.sidebar-recolhida) .sidebar-header {
+    width: 100%;
+    min-height: 62px;
+    padding: 0 4px 18px;
+  }
+
+  .app-sidebar .marca {
+    cursor: pointer;
+  }
+
+  .app-frame:not(.sidebar-recolhida) .app-sidebar .marca-texto,
+  .app-frame:not(.sidebar-recolhida) .sidebar-label,
+  .app-frame:not(.sidebar-recolhida) .sidebar-grupo,
+  .app-frame:not(.sidebar-recolhida) .sidebar-contador {
+    display: block;
+  }
+
+  .app-frame:not(.sidebar-recolhida) .sidebar-rodape {
+    display: flex;
+  }
+
+  .app-frame:not(.sidebar-recolhida) .sidebar-conteudo,
+  .app-frame:not(.sidebar-recolhida) .sidebar-nav {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .app-frame:not(.sidebar-recolhida) .sidebar-item,
+  .app-frame:not(.sidebar-recolhida) .sidebar-tema {
+    width: 100%;
+    height: auto;
+    min-height: 46px;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    justify-items: start;
+    padding: 0 12px;
+  }
+
+  .app-frame.sidebar-recolhida .sidebar-rodape {
+    display: none;
+  }
+
+  body.editando-texto #player-fixo {
+    left: 224px;
+  }
+
+  body.editando-texto .app-frame.sidebar-recolhida #player-fixo {
+    left: 76px;
+  }
+
+  .topbar-voz {
+    display: flex;
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --altura-player: 112px;
+  }
+
+  .app-stage {
+    height: calc(100dvh - 76px);
+  }
+
+  .app-sidebar,
+  .sidebar-recolhida .app-sidebar {
+    height: 76px;
+    padding: 7px 8px 9px;
+  }
+
+  .sidebar-conteudo,
+  .sidebar-nav {
+    height: 60px;
+  }
+
+  .sidebar-item,
+  .sidebar-recolhida .sidebar-item {
+    width: 20%;
+    max-width: none;
+    height: 60px;
+    min-height: 60px;
+  }
+
+  .sidebar-icone {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sidebar-icone .icone {
+    width: 23px;
+    height: 23px;
+  }
+
+  .topbar-logo {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+    align-self: center;
+  }
+
+  #btn-editar-texto,
+  .topbar-voz,
+  #btn-voz-menu {
+    width: 52px;
+    height: 46px;
+    min-height: 46px;
+  }
+
+  .entrada-resumo,
+  .topbar-acoes {
+    align-items: center;
+  }
+
+  .topbar-acoes {
+    align-self: center;
+  }
+
+  .botoes-carregamento {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 56px;
+    gap: 8px;
+  }
+
+  #btn-carregar {
+    grid-column: 1 / -1;
+  }
+
+  .botoes-carregamento button {
+    min-height: 52px;
+    font-size: 14px;
+  }
+
+  #btn-direto,
+  #btn-limpar-texto {
+    width: 100%;
+    height: 52px;
+    min-height: 52px;
+    padding-inline: 8px;
+  }
+
+  #btn-voz-editor {
+    grid-column: 3;
+    grid-row: 2;
+    width: 56px;
+    height: 52px;
+    min-height: 52px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  #btn-voz-editor > span,
+  #btn-voz-editor .seletor-chevron {
+    display: none;
+  }
+
+  #btn-direto {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #btn-limpar-texto {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .entrada-resumo > div:first-of-type {
+    display: flex;
+    min-width: 0;
+    align-self: stretch;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    text-align: left;
+  }
+
+  .entrada-cabecalho-acoes {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  #btn-cancelar-edicao {
+    width: auto;
+    min-width: 82px;
+    padding: 0 12px;
+  }
+
+  #btn-cancelar-edicao span {
+    display: inline;
+  }
+
+  body.editando-texto #player-fixo {
+    bottom: 76px;
+  }
+
+  .player-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .player-btn-play {
+    width: 56px;
+    height: 56px;
+  }
+
+  .velocidade-gatilho {
+    min-width: 72px;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid #394263;
+    border-radius: 10px;
+    background: #101526;
+  }
+
+  .velocidade-gatilho:hover,
+  .velocidade-gatilho:focus-visible {
+    border-color: var(--cor-primaria);
+    background: #171d33;
+  }
+
+  .sidebar-label,
+  .sidebar-recolhida .sidebar-label {
+    display: none;
+  }
+
+  .sidebar-icone {
+    width: 34px;
+    height: 34px;
+  }
+
+  .sidebar-icone .icone {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* O seletor de voz usa ondas sonoras em todos os tamanhos de tela. */
+.topbar-voz-icone {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+@media (min-width: 941px) {
+  #btn-editar-texto {
+    display: inline-flex;
+    min-height: 44px;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 16px;
+  }
+
+  #btn-editar-texto .btn-editar-icone {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Controles compactos quando o tablet perde largura útil para a sidebar. */
+@media (min-width: 641px) and (max-width: 940px) {
+  .entrada-resumo {
+    gap: 10px;
+    padding-inline: 18px;
+  }
+
+  .entrada-resumo > div:first-of-type {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .entrada-resumo strong {
+    width: 100%;
+    max-width: none;
+  }
+
+  .topbar-acoes {
+    flex: 0 0 auto;
+    gap: 8px;
+  }
+
+  #btn-editar-texto {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+    padding: 0;
+    place-items: center;
+    border-radius: 11px;
+  }
+
+  #btn-editar-texto span {
+    display: none;
+  }
+
+  .btn-editar-icone {
+    display: block;
+  }
+
+  .topbar-voz,
+  #btn-voz-menu {
+    width: 46px;
+    height: 46px;
+    min-height: 46px;
+    flex: 0 0 46px;
+  }
+
+  #btn-voz-menu {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .topbar-voz-label,
+  #btn-voz-menu .seletor-chevron {
+    display: none;
+  }
+
+  #player-fixo {
+    padding-inline: 18px;
+  }
+
+  .player-linha-controles {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .player-trecho {
+    width: auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .player-controles-principais {
+    gap: 8px;
+  }
+
+  .velocidade-controle {
+    min-width: 0;
+    justify-self: end;
+  }
+
+  .velocidade-gatilho {
+    min-width: 72px;
+    width: 72px;
+  }
+}
+
+/* Botões preenchidos ou contornados usam forma circular/pílula em todo o app. */
+button:not(.marca):not(.ci-abrir):not(.painel-backdrop):not(#toggle-removido):not(#btn-limpar-notas):not(#btn-limpar-comentarios) {
+  border-radius: 999px;
+}
+
+@media (max-width: 640px) {
+  .player-btn-secundario {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+  }
+
+  .player-controles-principais {
+    gap: 8px;
+  }
+}
+
+/* Contraste dos botões preenchidos com o roxo oficial do logotipo. */
+#btn-carregar,
+#btn-editar-texto,
+.player-btn-play,
+#btn-comentar-trecho-marcado,
+#popup-salvar,
+#btn-comentar-flutuante {
+  color: #fff;
+}
+
+/* Tema claro: consolidação final para componentes e estados da revisão atual. */
+body.tema-claro {
+  --cor-primaria: #5b4bd6;
+  --cor-primaria-forte: #4939b8;
+  --cor-info: #5144a3;
+  --cor-sucesso: #087f72;
+  --cor-alerta: #8a5a00;
+  --cor-perigo: #b4232c;
+  --sombra-flutuante: 0 12px 32px rgb(45 55 82 / 18%);
+}
+
+body.tema-claro .sidebar-toggle {
+  border-color: #c8cfe0;
+  background: #f4f6fb;
+  box-shadow: 0 4px 14px rgb(45 55 82 / 16%);
+  color: #58637f;
+}
+
+body.tema-claro .sidebar-toggle:hover,
+body.tema-claro .sidebar-toggle:focus-visible {
+  border-color: #9589e6;
+  background: #ece9ff;
+  color: #4939a5;
+}
+
+body.tema-claro .sidebar-grupo,
+body.tema-claro .marca-kicker,
+body.tema-claro .entrada-resumo-meta,
+body.tema-claro .comentarios-vazio,
+body.tema-claro .menu-contexto-texto small,
+body.tema-claro .menu-contexto-cabecalho small,
+body.tema-claro .menu-ajuste-item small {
+  color: #626d89;
+}
+
+body.tema-claro .sidebar-item:disabled,
+body.tema-claro button:disabled {
+  color: #8b94aa;
+}
+
+body.tema-claro .sidebar-contador,
+body.tema-claro .painel-contador,
+body.tema-claro .comentarios-titulo-linha .painel-contador {
+  border-color: #d7d2fa;
+  background: #e8e4ff;
+  color: #453889;
+}
+
+body.tema-claro #btn-voz-menu,
+body.tema-claro #btn-voz-editor,
+body.tema-claro #btn-limpar-texto,
+body.tema-claro #btn-cancelar-edicao,
+body.tema-claro #btn-cancelar-selecao-trechos {
+  border-color: #c7cede;
+  background: #ffffff;
+  color: #4d5874;
+}
+
+body.tema-claro #btn-voz-menu:hover:not(:disabled),
+body.tema-claro #btn-voz-editor:hover:not(:disabled),
+body.tema-claro #btn-limpar-texto:hover:not(:disabled),
+body.tema-claro #btn-cancelar-edicao:hover:not(:disabled),
+body.tema-claro #btn-cancelar-selecao-trechos:hover:not(:disabled) {
+  border-color: #9589e6;
+  background: #f3f1ff;
+  color: #4939a5;
+}
+
+body.tema-claro #input-texto,
+body.tema-claro #leitor-viewport,
+body.tema-claro #painel-lateral-conteudo {
+  scrollbar-color: #aab2c7 #edf0f6;
+}
+
+body.tema-claro #input-texto::-webkit-scrollbar-track,
+body.tema-claro #leitor-viewport::-webkit-scrollbar-track {
+  background: #edf0f6;
+}
+
+body.tema-claro #input-texto::-webkit-scrollbar-thumb,
+body.tema-claro #leitor-viewport::-webkit-scrollbar-thumb {
+  border-color: #edf0f6;
+  background: #aab2c7;
+}
+
+body.tema-claro #input-texto::-webkit-scrollbar-thumb:hover,
+body.tema-claro #leitor-viewport::-webkit-scrollbar-thumb:hover {
+  background: #858fa8;
+}
+
+body.tema-claro #texto-renderizado [data-elid]:hover {
+  background: #f0eeff;
+}
+
+body.tema-claro #texto-renderizado p,
+body.tema-claro #texto-renderizado li,
+body.tema-claro #texto-renderizado h3,
+body.tema-claro #texto-renderizado h4 {
+  color: #303850;
+}
+
+body.tema-claro #texto-renderizado .destaque-leitura,
+body.tema-claro #texto-renderizado [data-lendo="true"],
+body.tema-claro #texto-renderizado .lendo,
+body.tema-claro #texto-renderizado blockquote {
+  border-color: #7464dc;
+  background: #eeecff;
+  color: #242c43;
+}
+
+body.tema-claro .sidebar-rodape,
+body.tema-claro .comentarios-toolbar,
+body.tema-claro #painel-comentarios {
+  border-color: #d7dceb;
+}
+
+body.tema-claro #painel-notas #notas-textarea {
+  border-color: #cbd2e4;
+  background: #f7f9fd;
+  color: #192139;
+}
+
+body.tema-claro #notas-textarea::placeholder,
+body.tema-claro #input-texto::placeholder,
+body.tema-claro #popup-input::placeholder {
+  color: #707a94;
+  opacity: 1;
+}
+
+body.tema-claro .btn-info {
+  color: #69738f;
+}
+
+body.tema-claro .btn-info:hover,
+body.tema-claro .btn-info:focus-visible {
+  border-color: #c5bff0;
+  background: #efedff;
+  color: #5144a3;
+}
+
+body.tema-claro .btn-info::after {
+  border-color: #c7cede;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgb(45 55 82 / 20%);
+  color: #28304a;
+}
+
+body.tema-claro .comentarios-cabecalho {
+  border-bottom-color: #d7dceb;
+}
+
+body.tema-claro #btn-selecionar-trechos,
+body.tema-claro #btn-copiar-comentarios,
+body.tema-claro #btn-limpar-comentarios {
+  border-color: #c7cede;
+  background: #f5f7fb;
+  color: #4d5874;
+}
+
+body.tema-claro #btn-selecionar-trechos:hover:not(:disabled),
+body.tema-claro #btn-copiar-comentarios:hover:not(:disabled),
+body.tema-claro #btn-limpar-comentarios:hover:not(:disabled) {
+  border-color: #a59be7;
+  background: #eeebff;
+  color: #4939a5;
+}
+
+body.tema-claro #btn-selecionar-trechos[aria-pressed="true"] {
+  border-color: #5b4bd6;
+  background: #5b4bd6;
+  color: #ffffff;
+}
+
+body.tema-claro #copiado-ok {
+  background: #e8f7f3;
+  color: #086a60;
+}
+
+body.tema-claro .barra-selecao-trechos {
+  border-color: #c6cde0;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 16px 40px rgb(45 55 82 / 20%);
+}
+
+body.tema-claro .barra-selecao-trechos > span {
+  color: #4d5874;
+}
+
+body.tema-claro .velocidade-gatilho,
+body.tema-claro .velocidade-gatilho:hover,
+body.tema-claro .velocidade-gatilho:focus-visible {
+  border-color: #c7cede;
+  background: #f7f9fd;
+  color: #35405c;
+}
+
+body.tema-claro .velocidade-gatilho:hover,
+body.tema-claro .velocidade-gatilho:focus-visible {
+  border-color: #9589e6;
+  background: #f0edff;
+}
+
+body.tema-claro .menu-contexto-check {
+  border-color: #aeb7cc;
+  color: #5144a3;
+}
+
+body.tema-claro .menu-contexto-opcao[aria-selected="true"] .menu-contexto-check {
+  border-color: #5b4bd6;
+  background: #5b4bd6;
+  color: #ffffff;
+}
+
+body.tema-claro .menu-contexto-cabecalho {
+  border-bottom-color: #d7dceb;
+}
+
+body.tema-claro #player-fixo {
+  box-shadow: 0 -8px 28px rgb(45 55 82 / 12%);
+}
+
+body.tema-claro .player-btn-play,
+body.tema-claro .player-btn-play:hover:not(:disabled),
+body.tema-claro .player-btn-play:focus-visible,
+body.tema-claro .player-btn-play:active:not(:disabled) {
+  border-color: #5b4bd6;
+  background: #5b4bd6;
+  color: #ffffff;
+}
+
+body.tema-claro .player-btn-play:hover:not(:disabled),
+body.tema-claro .player-btn-play:focus-visible {
+  border-color: #4939b8;
+  background: #4939b8;
+  box-shadow: 0 0 0 3px rgb(91 75 214 / 20%);
+}
+
+body.tema-claro .btn-sincronizar {
+  border-color: #5b4bd6;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgb(45 55 82 / 18%);
+  color: #4939a5;
+}
+
+body.tema-claro .btn-sincronizar:hover,
+body.tema-claro .btn-sincronizar:focus-visible {
+  border-color: #4939b8;
+  background: #eeebff;
+  color: #3d308f;
+}
+
+body.tema-claro .player-btn:not(.player-btn-play):hover:not(:disabled),
+body.tema-claro .player-btn:not(.player-btn-play):focus-visible {
+  border-color: #aaa1e8;
+  background: #efedff;
+  color: #4939a5;
+}
+
+body.tema-claro #timeline::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, #5b4bd6 var(--progresso), #d7ddea var(--progresso));
+}
+
+body.tema-claro #timeline::-moz-range-track {
+  background: #d7ddea;
+}
+
+body.tema-claro #timeline::-moz-range-progress {
+  background: #5b4bd6;
+}
+
+body.tema-claro #timeline::-webkit-slider-thumb,
+body.tema-claro #timeline::-moz-range-thumb {
+  border-color: #ffffff;
+  background: #5b4bd6;
+}
+
+body.tema-claro .comentario-item:hover,
+body.tema-claro .comentario-item:focus-within {
+  border-color: #aaa1e8;
+  background: #f5f3ff;
+}
+
+body.tema-claro .comentario-item.realce,
+body.tema-claro #texto-renderizado .trecho-marcado-checkbox {
+  background: #eeebff !important;
+}
+
+/* Rótulos e dimensões compactos, sem deformar os botões em telas intermediárias. */
+@media (min-width: 641px) and (max-width: 1400px) {
+  .rotulo-complemento {
+    display: none;
+  }
+
+  .botoes-carregamento {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .botoes-carregamento > button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    padding-inline: 7px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .botoes-carregamento > button .icone {
+    flex: 0 0 auto;
+  }
+
+  .app-frame:not(.sidebar-recolhida) .sidebar-contador {
+    display: inline-grid;
+    align-items: center;
+    justify-items: center;
+    line-height: 1;
   }
 }

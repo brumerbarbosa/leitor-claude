@@ -29,12 +29,12 @@
 
   function mapearElementos() {
     const ids = [
-      "app-frame", "app-sidebar", "app-sidebar-conteudo", "btn-sidebar-toggle",
+      "app-frame", "app-sidebar", "app-sidebar-conteudo", "btn-sidebar-toggle", "btn-sidebar-logo",
       "leitura-topbar", "voz-select-topbar", "painel-comentarios-count",
       "nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-ajustes-mobile",
       "nav-preferencias", "btn-tema", "tema-label", "menu-ajustes-mobile", "ajuste-velocidade-mobile", "ajuste-velocidade-valor", "ajuste-tema-mobile", "ajuste-tema-titulo", "ajuste-tema-descricao", "area-trabalho", "entrada-card", "entrada-editor",
       "entrada-resumo", "entrada-resumo-titulo", "entrada-resumo-meta", "btn-editar-texto", "btn-cancelar-edicao",
-      "input-texto", "btn-carregar", "btn-direto", "btn-limpar-texto", "voz-info",
+      "input-texto", "btn-carregar", "btn-direto", "btn-limpar-texto", "btn-voz-editor", "voz-info",
       "leitura-workspace", "leitura-titulo", "leitor-viewport", "texto-renderizado", "status",
       "bloco-removido", "lista-removida", "toggle-removido",
       "btn-acompanhar", "acompanhar-label", "barra-selecao-trechos", "selecao-trechos-status", "btn-cancelar-selecao-trechos", "btn-comentar-trecho-marcado", "painel-lateral",
@@ -71,6 +71,7 @@
     iconeToggle?.setAttribute("href", recolhida ? "#icon-chevron-right" : "#icon-chevron-left");
     el["btn-sidebar-toggle"].setAttribute("aria-expanded", String(!recolhida));
     el["btn-sidebar-toggle"].setAttribute("aria-label", recolhida ? "Expandir menu" : "Recolher menu");
+    el["btn-sidebar-logo"].setAttribute("aria-expanded", String(!recolhida));
     if (persistir) salvarPreferencia(CHAVE_SIDEBAR, recolhida);
   }
 
@@ -278,10 +279,28 @@
       definirSidebarRecolhida(!app.estado.sidebarRecolhida);
     });
 
+    el["btn-sidebar-logo"].addEventListener("click", () => {
+      if (global.matchMedia?.("(min-width: 641px) and (max-width: 940px)").matches) {
+        definirSidebarRecolhida(!app.estado.sidebarRecolhida);
+      }
+    });
+
     el["nav-nova-leitura"].addEventListener("click", () => {
       definirPainelMovelAberto(false);
+      definirMenuAjustesAberto(false);
+      app.modulos.leitor.parar();
+
+      el["input-texto"].value = "";
+      el["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+      app.estado.textoCarregado = "";
+
+      el["lista-removida"].replaceChildren();
+      el["lista-removida"].style.display = "none";
+      el["bloco-removido"].style.display = "none";
+
+      app.modulos.renderizador.renderizar("");
+      atualizarModoLeitura();
       definirEntradaRecolhida(false, true);
-      definirNavegacaoAtiva("nav-nova-leitura");
     });
 
     el["nav-leitura"].addEventListener("click", () => {

@@ -20,6 +20,7 @@
     <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></symbol>
     <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
     <symbol id="icon-headphones" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><path d="M4 14h3v6H5a1 1 0 0 1-1-1v-5Zm16 0h-3v6h2a1 1 0 0 0 1-1v-5Z" /></symbol>
+    <symbol id="icon-voice-wave" viewBox="0 0 24 24"><path d="M3 12h2M7 9v6M11 5v14M15 8v8M19 10v4M22 12h-1" /></symbol>
     <symbol id="icon-notebook-pen" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 17.5v-13ZM4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 2v13" /><path d="m13.5 10.5 4-4 1.5 1.5-4 4-2 .5.5-2Z" /></symbol>
     <symbol id="icon-message-quote" viewBox="0 0 24 24"><path d="M21 14a4 4 0 0 1-4 4H9l-5 3v-7a4 4 0 0 1-1-2.7V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v7Z" /><path d="M8 8h3v3H8V8Zm6 0h3v3h-3V8Z" /></symbol>
     <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" /></symbol>
@@ -30,6 +31,7 @@
     <symbol id="icon-skip-back" viewBox="0 0 24 24"><path d="M6 5v14M18 6l-9 6 9 6V6Z" /></symbol>
     <symbol id="icon-skip-forward" viewBox="0 0 24 24"><path d="M18 5v14M6 6l9 6-9 6V6Z" /></symbol>
     <symbol id="icon-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1" /></symbol>
+    <symbol id="icon-sync" viewBox="0 0 24 24"><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M6.1 8.2A7 7 0 0 1 18.7 7L20 12M4 12l1.3 5A7 7 0 0 0 17.9 15.8" /></symbol>
     <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" /></symbol>
     <symbol id="icon-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
     <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6" /></symbol>
@@ -46,14 +48,14 @@
   <div id="app-frame" class="app-frame">
     <aside id="app-sidebar" class="app-sidebar" aria-label="Navegação principal">
       <header class="sidebar-header">
-        <div class="marca">
+        <button type="button" id="btn-sidebar-logo" class="marca" aria-label="Expandir ou recolher menu">
           <img class="marca-logo" src="assets/icons/icon-leitor-claude.svg" alt="" width="50" height="50">
           <div class="marca-texto">
             <span class="marca-kicker">LEITOR INTELIGENTE</span>
             <h1 class="titulo">Leitor Claude</h1>
             <p class="marca-assinatura">Ouça. Revise. Comente.</p>
           </div>
-        </div>
+        </button>
         <button type="button" id="btn-sidebar-toggle" class="sidebar-toggle" aria-label="Recolher menu" aria-controls="app-sidebar-conteudo" aria-expanded="true"><svg class="icone" aria-hidden="true"><use href="#icon-chevron-left"></use></svg></button>
       </header>
 
@@ -108,19 +110,18 @@
             <span id="entrada-resumo-meta">Texto preparado para leitura</span>
           </div>
           <div class="topbar-acoes">
+            <button type="button" id="btn-editar-texto" aria-label="Alterar texto" aria-controls="entrada-editor" aria-expanded="false"><span>Alterar texto</span><svg class="icone btn-editar-icone" aria-hidden="true"><use href="#icon-edit"></use></svg></button>
             <div class="topbar-voz" title="Escolher voz da leitura">
               <span class="topbar-voz-dot" aria-hidden="true"></span>
               <select id="voz-select-topbar" class="select-fonte" aria-hidden="true" tabindex="-1" hidden>
                 <option>Carregando vozes...</option>
               </select>
               <button type="button" id="btn-voz-menu" class="seletor-contexto-gatilho" aria-label="Escolher voz da leitura" aria-haspopup="listbox" aria-expanded="false" aria-controls="voz-menu">
-                <svg class="icone topbar-voz-icone" aria-hidden="true"><use href="#icon-headphones"></use></svg>
-                <span id="voz-selecionada-label" class="topbar-voz-label">Carregando vozes...</span>
+                <svg class="icone topbar-voz-icone" aria-hidden="true"><use href="#icon-voice-wave"></use></svg>
+                <span id="voz-selecionada-label" class="topbar-voz-label">Voz</span>
                 <svg class="icone seletor-chevron" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
               </button>
-              <div id="voz-menu" class="menu-contexto menu-contexto-voz" role="listbox" aria-label="Vozes disponíveis" hidden></div>
             </div>
-            <button type="button" id="btn-editar-texto" aria-label="Alterar texto" aria-controls="entrada-editor" aria-expanded="false"><span>Alterar texto</span><svg class="icone btn-editar-icone" aria-hidden="true"><use href="#icon-edit"></use></svg></button>
           </div>
         </div>
       </header>
@@ -132,12 +133,10 @@
               <div id="entrada-editor">
                 <div class="secao-cabecalho">
                   <div>
-                    <span class="secao-kicker">NOVA LEITURA</span>
                     <h2 id="entrada-titulo">Cole uma resposta</h2>
                   </div>
                   <div class="entrada-cabecalho-acoes">
-                    <button type="button" id="btn-cancelar-edicao" class="btn-com-icone" aria-label="Voltar à leitura" hidden><svg class="icone icone-pequeno" aria-hidden="true"><use href="#icon-chevron-left"></use></svg><span>Voltar à leitura</span></button>
-                    <span class="formato-badge">Markdown</span>
+                    <button type="button" id="btn-cancelar-edicao" class="btn-com-icone" aria-label="Voltar à leitura" hidden><svg class="icone icone-pequeno" aria-hidden="true"><use href="#icon-chevron-left"></use></svg><span>Voltar</span></button>
                   </div>
                 </div>
 
@@ -145,11 +144,12 @@
                 <textarea id="input-texto" placeholder="Cole aqui a mensagem do Claude Code..."></textarea>
                 <div class="acoes-carregamento">
                   <div class="botoes-carregamento">
-                    <button type="button" id="btn-carregar" class="btn-com-icone"><svg class="icone" aria-hidden="true"><use href="#icon-clipboard"></use></svg><span>Colar e ouvir</span></button>
+                    <button type="button" id="btn-carregar" class="btn-com-icone"><svg class="icone" aria-hidden="true"><use href="#icon-clipboard"></use></svg><span>Colar<span class="rotulo-complemento"> e ouvir</span></span></button>
                     <button type="button" id="btn-direto" class="btn-com-icone"><svg class="icone" aria-hidden="true"><use href="#icon-play"></use></svg><span>Ouvir</span></button>
-                    <button type="button" id="btn-limpar-texto" class="btn-com-icone" disabled><svg class="icone icone-pequeno" aria-hidden="true"><use href="#icon-trash"></use></svg><span>Limpar texto</span></button>
+                    <button type="button" id="btn-limpar-texto" class="btn-com-icone" disabled><svg class="icone icone-pequeno" aria-hidden="true"><use href="#icon-trash"></use></svg><span>Limpar<span class="rotulo-complemento"> texto</span></span></button>
+                    <button type="button" id="btn-voz-editor" class="btn-com-icone" aria-label="Escolher voz" aria-haspopup="listbox" aria-expanded="false" aria-controls="voz-menu"><svg class="icone" aria-hidden="true"><use href="#icon-voice-wave"></use></svg><span>Voz</span><svg class="icone icone-pequeno seletor-chevron" aria-hidden="true"><use href="#icon-chevron-down"></use></svg></button>
                   </div>
-                  <div id="voz-info" aria-live="polite">Carregando vozes...</div>
+                  <div id="voz-info" class="sr-only" aria-live="polite">Carregando vozes...</div>
                 </div>
 
                 <section id="bloco-removido" aria-label="Linhas removidas pelo filtro">
@@ -173,7 +173,7 @@
                   <article id="texto-renderizado"></article>
                 </div>
                 <button type="button" id="btn-acompanhar" class="btn-sincronizar" aria-controls="leitor-viewport" hidden>
-                  <span class="sincronizar-icone" aria-hidden="true"><svg class="icone"><use href="#icon-locate"></use></svg></span>
+                  <span class="sincronizar-icone" aria-hidden="true"><svg class="icone"><use href="#icon-sync"></use></svg></span>
                   <span id="acompanhar-label">Sincronizar</span>
                 </button>
                 <div id="barra-selecao-trechos" class="barra-selecao-trechos" role="toolbar" aria-label="Seleção de trecho para comentário" hidden>
@@ -291,6 +291,8 @@
       </footer>
     </div>
   </div>
+
+  <div id="voz-menu" class="menu-contexto menu-contexto-voz" role="listbox" aria-label="Vozes disponíveis" hidden></div>
 
   <div id="menu-ajustes-mobile" class="menu-contexto menu-ajustes-mobile" role="menu" aria-label="Ajustes da leitura" hidden>
     <div class="menu-contexto-cabecalho">

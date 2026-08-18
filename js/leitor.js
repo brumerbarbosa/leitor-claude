@@ -102,7 +102,7 @@
         el["voz-select-topbar"].value = valor;
         el["voz-select-topbar"].dispatchEvent(new Event("change", { bubbles: true }));
         fecharMenuContexto();
-        el["btn-voz-menu"].focus({ preventScroll: true });
+        (el["entrada-card"].hidden ? el["btn-voz-menu"] : el["btn-voz-editor"]).focus({ preventScroll: true });
       }, voz.lang));
     });
   }
@@ -174,9 +174,13 @@
     seletor.value = app.estado.vozSelecionada ? chaveVoz(app.estado.vozSelecionada) : "";
     seletor.disabled = vozesDisponiveis.length === 0;
     app.elementos["btn-voz-menu"].disabled = vozesDisponiveis.length === 0;
-    app.elementos["voz-selecionada-label"].textContent = app.estado.vozSelecionada
-      ? `${app.estado.vozSelecionada.name} - ${app.estado.vozSelecionada.lang}`
-      : "Voz do navegador";
+    app.elementos["btn-voz-editor"].disabled = vozesDisponiveis.length === 0;
+    app.elementos["voz-selecionada-label"].textContent = "Voz";
+    const descricaoVoz = app.estado.vozSelecionada
+      ? `Voz selecionada: ${app.estado.vozSelecionada.name} - ${app.estado.vozSelecionada.lang}`
+      : "Escolher voz da leitura";
+    app.elementos["btn-voz-menu"].title = descricaoVoz;
+    app.elementos["btn-voz-editor"].title = descricaoVoz;
     renderizarMenuVozes();
   }
 
@@ -185,13 +189,19 @@
     app.elementos["btn-voz-menu"].addEventListener("click", () => {
       abrirMenuContexto(app.elementos["voz-menu"], app.elementos["btn-voz-menu"]);
     });
+    app.elementos["btn-voz-editor"].addEventListener("click", () => {
+      abrirMenuContexto(app.elementos["voz-menu"], app.elementos["btn-voz-editor"]);
+    });
     seletor.addEventListener("change", () => {
       const voz = vozesDisponiveis.find((item) => (item.voiceURI || `${item.name}|${item.lang}`) === seletor.value);
       if (!voz) return;
 
       app.estado.vozSelecionada = voz;
       app.elementos["voz-info"].textContent = `Voz: ${voz.name} - ${voz.lang}`;
-      app.elementos["voz-selecionada-label"].textContent = `${voz.name} - ${voz.lang}`;
+      app.elementos["voz-selecionada-label"].textContent = "Voz";
+      const descricaoVoz = `Voz selecionada: ${voz.name} - ${voz.lang}`;
+      app.elementos["btn-voz-menu"].title = descricaoVoz;
+      app.elementos["btn-voz-editor"].title = descricaoVoz;
       try { localStorage.setItem(CHAVE_VOZ, seletor.value); } catch (_) { /* armazenamento indisponível */ }
       renderizarMenuVozes();
 
@@ -584,6 +594,7 @@
       el["voz-select-topbar"].innerHTML = "<option>Leitura indisponível</option>";
       el["voz-select-topbar"].disabled = true;
       el["btn-voz-menu"].disabled = true;
+      el["btn-voz-editor"].disabled = true;
       el["voz-selecionada-label"].textContent = "Leitura indisponível";
       el["btn-carregar"].disabled = true;
       el["btn-direto"].disabled = true;
