@@ -38,6 +38,18 @@ Ferramenta web local para ouvir, revisar e comentar respostas extensas do Claude
 - No tablet e no smartphone, o painel de revisão funciona como um drawer modal e mostra somente a ferramenta escolhida — notas ou comentários — sem reduzir a largura do leitor.
 - O topbar da leitura mostra o título detectado no Markdown, um seletor persistente de voz e o acesso para alterar o texto.
 
+## Instalar como aplicativo
+
+Quando servido por `https://` ou `localhost`, o Leitor funciona como PWA:
+
+- O navegador oferece **Instalar**, e o app passa a abrir em janela própria, com ícone na tela inicial.
+- Um service worker guarda todos os arquivos no aparelho, então a leitura funciona **sem internet** depois da primeira visita.
+- No Android, o Leitor aparece na lista de **Compartilhar** de outros aplicativos: o texto compartilhado entra direto na leitura.
+
+Abrir o `index.html` direto do disco continua funcionando como sempre — apenas sem instalação e sem o modo offline, porque navegadores exigem `http(s)` para service workers.
+
+Ao publicar uma versão nova, altere `VERSAO` em `sw.js` para que o cache antigo seja descartado.
+
 Não há instalação, dependências de terceiros ou backend. Os arquivos JavaScript são scripts tradicionais com `defer`, então a aplicação também funciona quando `index.html` é aberto diretamente por `file://`.
 
 ## Estrutura
@@ -62,6 +74,8 @@ leitor-claude/
 │   ├── filtro.test.js
 │   ├── leitor.test.js
 │   └── renderizador.test.js
+├── manifest.json             # Identidade do app instalável
+├── sw.js                     # Cache offline
 └── assets/
     ├── icons/
     └── images/

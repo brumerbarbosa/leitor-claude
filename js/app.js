@@ -382,6 +382,43 @@
     });
   }
 
+  /*
+   * PWA. O service worker exige http(s), então abrir o index.html direto do disco
+   * continua funcionando normalmente, apenas sem instalação e sem modo offline.
+   */
+  function registrarServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    if (global.location.protocol !== "http:" && global.location.protocol !== "https:") return;
+
+    global.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {
+        /* Sem service worker o app segue funcionando, só não fica offline. */
+      });
+    });
+  }
+
+  /*
+   * Texto vindo do compartilhamento do sistema (share_target do manifest).
+   * O endereço é limpo em seguida para o texto não reaparecer ao recarregar.
+   */
+  function carregarTextoCompartilhado() {
+    const parametros = new URLSearchParams(global.location.search);
+    const partes = [parametros.get("title"), parametros.get("text"), parametros.get("url")]
+      .map((parte) => (parte || "").trim())
+      .filter(Boolean);
+
+    if (!partes.length) return;
+
+    const texto = partes.join("\n\n");
+    app.elementos["input-texto"].value = texto;
+    app.elementos["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+    prepararNovaLeitura(texto);
+
+    if (global.history?.replaceState) {
+      global.history.replaceState({}, "", global.location.pathname);
+    }
+  }
+
   function configurarShell() {
     const el = app.elementos;
     const estadoSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_SIDEBAR, false);
@@ -541,5 +578,7 @@
     configurarArrastarArquivo();
     configurarShell();
     configurarAtalhos();
+    registrarServiceWorker();
+    carregarTextoCompartilhado();
   });
 })(window);
