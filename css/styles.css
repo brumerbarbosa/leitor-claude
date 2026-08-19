@@ -4162,20 +4162,22 @@ body {
   font-weight: 550;
 }
 
+/*
+ * Sem moldura: ficam só os ícones. O slot mantém os 34px da caixa antiga para
+ * não deslocar textos e setas; o ícone cresceu de 17px para 22px, em linha com
+ * o restante do app (sidebar e player usam 18px).
+ */
 .menu-ajuste-icone {
   display: grid;
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid #353e60;
-  border-radius: 9px;
-  background: #171d33;
   color: #bdb5ff;
 }
 
 .menu-ajuste-icone .icone {
-  width: 17px;
-  height: 17px;
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 820px) {
@@ -4391,8 +4393,6 @@ body.tema-claro .menu-contexto-opcao[aria-selected="true"] {
 }
 
 body.tema-claro .menu-ajuste-icone {
-  border-color: #d2d8e8;
-  background: #f0f2f9;
   color: #6657c2;
 }
 
@@ -5851,4 +5851,122 @@ body.tema-claro #texto-renderizado a:focus-visible {
 
 .sidebar-recolhida .app-sidebar .marca-logo {
   display: block;
+}
+
+/*
+ * Ajustes de largura para telas estreitas.
+ *
+ * Dois problemas se somavam e cortavam a interface: um texto sem espaços (uma URL
+ * colada, por exemplo) impedia a área de leitura de encolher, e o player tinha
+ * largura mínima maior que a tela. O container corta o excesso, então funções
+ * sumiam nas bordas em vez de gerar rolagem.
+ */
+#texto-renderizado,
+#texto-renderizado p,
+#texto-renderizado li,
+#texto-renderizado blockquote,
+#texto-renderizado td,
+#texto-renderizado th {
+  overflow-wrap: anywhere;
+}
+
+#leitura-topbar,
+.entrada-resumo,
+.app-shell,
+.area-trabalho,
+.coluna-central,
+#leitura-workspace,
+.leitor-area,
+#leitor-viewport,
+#player-fixo,
+.player-timeline,
+.player-linha-controles {
+  min-width: 0;
+}
+
+/*
+ * Só no celular o trecho vira filho direto do player (o JS o move nesse ponto de
+ * quebra). No tablet e no desktop ele continua na faixa de controles, como antes.
+ */
+#player-fixo > .player-trecho {
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto 6px;
+  overflow: hidden;
+  color: var(--cor-texto-suave);
+  font-size: 0.72rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#player-fixo > .player-trecho::after {
+  content: none;
+}
+
+@media (max-width: 940px) {
+  /* Sem isto o título longo empurra a barra além da tela. */
+  #entrada-resumo-titulo,
+  #entrada-resumo-meta,
+  .secao-kicker {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-acoes {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  /* A velocidade sai do player e continua acessível em Configurações. */
+  .velocidade-controle {
+    display: none;
+  }
+
+  .player-linha-controles {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .player-controles-principais {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  /* O rótulo completo só cabe em telas maiores. */
+  #btn-limpar-texto .rotulo-complemento {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .player-controles-principais {
+    gap: 6px;
+  }
+
+  .player-timeline {
+    gap: 6px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 940px) {
+  /*
+   * No tablet a faixa de controles é estreita: só os números cabem sem espremer
+   * os botões. O texto some pelo tamanho zero e o resumo vem do data-resumo,
+   * mesmo recurso já usado no celular.
+   */
+  .player-trecho {
+    font-size: 0;
+  }
+
+  .player-trecho::after {
+    content: attr(data-resumo);
+    font-size: 11px;
+  }
 }

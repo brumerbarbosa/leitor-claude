@@ -3,6 +3,8 @@
 
   const CHAVE_SIDEBAR = "leitor_sidebar_recolhida";
   const CHAVE_TEMA = "leitor_tema_claro";
+  /* Guardado numa constante: um MediaQueryList sem referência pode ser coletado. */
+  const CONSULTA_CELULAR = global.matchMedia?.("(max-width: 640px)");
 
   const app = {
     elementos: {},
@@ -419,6 +421,22 @@
     }
   }
 
+  /*
+   * No celular o trecho sai da faixa de controles e vai para cima da timeline:
+   * lá embaixo não há largura para ele sem espremer os botões. A partir do tablet
+   * ele volta ao lugar de origem, à esquerda dos controles, onde o layout já cabia.
+   */
+  function posicionarTrechoDoPlayer() {
+    const trecho = app.elementos["player-trecho"];
+    const player = app.elementos["player-fixo"];
+    const controles = player?.querySelector(".player-linha-controles");
+    if (!trecho || !player || !controles) return;
+
+    const estreito = Boolean(CONSULTA_CELULAR?.matches);
+    const destino = estreito ? player : controles;
+    if (trecho.parentElement !== destino) destino.prepend(trecho);
+  }
+
   function configurarShell() {
     const el = app.elementos;
     const estadoSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_SIDEBAR, false);
@@ -576,6 +594,10 @@
     app.modulos.dados.inicializar();
     configurarCarregamento();
     configurarArrastarArquivo();
+    posicionarTrechoDoPlayer();
+    CONSULTA_CELULAR?.addEventListener?.("change", posicionarTrechoDoPlayer);
+    /* O resize cobre navegadores e situações em que o evento da consulta não chega. */
+    global.addEventListener("resize", posicionarTrechoDoPlayer);
     configurarShell();
     configurarAtalhos();
     registrarServiceWorker();

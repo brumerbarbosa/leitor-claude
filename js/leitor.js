@@ -69,6 +69,15 @@
 
     const largura = menu.offsetWidth;
     const altura = menu.offsetHeight;
+
+    /* Sem gatilho visível (a velocidade sai do player no celular) o menu vai ao centro. */
+    if (!caixa.width && !caixa.height) {
+      menu.style.left = `${Math.max(margem, (global.innerWidth - largura) / 2)}px`;
+      menu.style.top = `${Math.max(margem, (global.innerHeight - altura) / 2)}px`;
+      menu.style.visibility = "visible";
+      return;
+    }
+
     const esquerda = Math.min(global.innerWidth - largura - margem, Math.max(margem, caixa.right - largura));
     const espacoAbaixo = global.innerHeight - caixa.bottom - margem;
     const usarAcima = abrirAcima || (espacoAbaixo < altura && caixa.top > altura);

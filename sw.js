@@ -7,7 +7,7 @@
  * para que o cache antigo seja descartado.
  */
 
-const VERSAO = "leitor-claude-v2";
+const VERSAO = "leitor-claude-v4";
 
 const ARQUIVOS = [
   "./",
