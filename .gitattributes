@@ -1,0 +1,16 @@
+# O repositório guarda sempre LF; a cópia de trabalho usa a quebra nativa do sistema.
+# Sem isto, o Git avisa sobre conversão LF/CRLF a cada comando no Windows.
+* text=auto
+
+# Binários nunca podem passar por conversão de quebra de linha.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.mp3 binary
+*.wav binary
+*.woff binary
+*.woff2 binary
+*.ttf binary

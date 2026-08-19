@@ -13,3 +13,6 @@ Desktop.ini
 *.tmp
 *.log
 
+# Testes rodam com o Node embutido; nenhuma dependência é instalada.
+node_modules/
+package-lock.json

@@ -10,6 +10,7 @@
   let hashDocumentoAtual = "";
   let rafPosicionamento = 0;
   let modoSelecaoTrechos = false;
+  let encerrarRevisao = null;
 
   function salvarNoNavegador() {
     try {
@@ -225,6 +226,76 @@
     marca.focus({ preventScroll: true });
   }
 
+  function realcarCartao(id) {
+    const lista = app.elementos["lista-comentarios"];
+    lista.querySelectorAll(".comentario-item.ouvindo").forEach((item) => item.classList.remove("ouvindo"));
+    const item = lista.querySelector(`.comentario-item[data-id="${id}"]`);
+    if (!item) return;
+    item.classList.add("ouvindo");
+    rolarDentro(lista, item);
+  }
+
+  function atualizarBotaoRevisao() {
+    const botao = app.elementos["btn-ouvir-revisao"];
+    const ouvindo = Boolean(encerrarRevisao);
+    botao.querySelector(".icone")?.setAttribute("data-icon", ouvindo ? "stop" : "headphones");
+    botao.querySelector("span").textContent = ouvindo ? "Parar" : "Ouvir";
+    botao.title = ouvindo ? "Parar a leitura dos comentários" : "Ouvir os comentários em voz alta";
+    botao.setAttribute("aria-pressed", String(ouvindo));
+  }
+
+  function limparEstadoRevisao() {
+    encerrarRevisao = null;
+    app.elementos["lista-comentarios"]
+      .querySelectorAll(".comentario-item.ouvindo")
+      .forEach((item) => item.classList.remove("ouvindo"));
+    atualizarBotaoRevisao();
+  }
+
+  function pararRevisao() {
+    if (encerrarRevisao) encerrarRevisao();
+    limparEstadoRevisao();
+  }
+
+  function ouvirRevisao() {
+    if (encerrarRevisao) {
+      pararRevisao();
+      app.elementos.status.textContent = "Leitura dos comentários interrompida.";
+      return;
+    }
+
+    const visiveis = comentariosDoDocumentoAtual();
+    if (!visiveis.length) return;
+
+    const itens = visiveis.map((comentario, indice) => ({
+      id: comentario.id,
+      texto: `Comentário ${indice + 1} de ${visiveis.length}. Trecho: ${comentario.quote.replace(/\s+/g, " ").trim()}. Seu comentário: ${comentario.comment}`
+    }));
+
+    app.modulos.notas?.abrirSecao("comentarios");
+
+    encerrarRevisao = app.modulos.leitor.falarSequencia(itens, {
+      aoItem: (item, indice, total) => {
+        app.elementos.status.textContent = `Ouvindo comentário ${indice + 1} de ${total}.`;
+        realcarCartao(item.id);
+
+        /* Acompanha no texto o trecho citado, sem roubar o foco a cada comentário. */
+        const marca = localizarMarcacao(item.id);
+        if (!marca) return;
+        app.modulos.renderizador.definirAcompanhamento(false, false);
+        app.modulos.renderizador.rolarElementoNoLeitor(marca, true);
+      },
+      aoTerminar: () => {
+        limparEstadoRevisao();
+        app.elementos.status.textContent = "Fim dos comentários.";
+      },
+      /* A leitura principal tem prioridade: se ela começar, a revisão se recolhe. */
+      aoEncerrar: limparEstadoRevisao
+    });
+
+    atualizarBotaoRevisao();
+  }
+
   function renderizarComentarios() {
     const el = app.elementos;
     const comentariosVisiveis = comentariosDoDocumentoAtual();
@@ -235,6 +306,8 @@
       `${comentariosVisiveis.length} ${comentariosVisiveis.length === 1 ? "comentário" : "comentários"}`
     );
     el["btn-copiar-comentarios"].disabled = comentariosVisiveis.length === 0;
+    el["btn-ouvir-revisao"].disabled = comentariosVisiveis.length === 0;
+    if (!comentariosVisiveis.length) pararRevisao();
     el["btn-limpar-comentarios"].disabled = comentariosVisiveis.length === 0;
 
     if (!comentariosVisiveis.length) {
@@ -721,6 +794,7 @@
     configurarMicrofone();
 
     document.addEventListener("leitor:renderizado", (evento) => {
+      pararRevisao();
       encerrarModoSelecaoTrechos();
       fecharPopup();
       app.elementos["btn-comentar-flutuante"].hidden = true;
@@ -733,9 +807,17 @@
       reaplicarMarcacoes();
     });
 
-    app.elementos["btn-limpar-comentarios"].addEventListener("click", () => {
+    app.elementos["btn-limpar-comentarios"].addEventListener("click", async () => {
       const comentariosVisiveis = comentariosDoDocumentoAtual();
-      if (!comentariosVisiveis.length || !global.confirm("Apagar os comentários deste texto?")) return;
+      if (!comentariosVisiveis.length) return;
+
+      const quantidade = comentariosVisiveis.length;
+      const confirmado = await app.modulos.shell.confirmar({
+        titulo: "Apagar comentários",
+        descricao: `${quantidade} ${quantidade === 1 ? "comentário deste texto será apagado" : "comentários deste texto serão apagados"}. Não é possível desfazer.`,
+        acaoRotulo: "Apagar"
+      });
+      if (!confirmado) return;
       const idsVisiveis = new Set(comentariosVisiveis.map((comentario) => comentario.id));
       comentarios = comentarios.filter((comentario) => !idsVisiveis.has(comentario.id));
       salvarNoNavegador();
@@ -746,10 +828,36 @@
     });
 
     app.elementos["btn-copiar-comentarios"].addEventListener("click", copiarComentarios);
+    app.elementos["btn-ouvir-revisao"].addEventListener("click", ouvirRevisao);
+  }
+
+  /* Usado pela importação: comentários repetidos são ignorados pelo id. */
+  function mesclar(lista) {
+    if (!Array.isArray(lista) || !lista.length) return 0;
+
+    const existentes = new Set(comentarios.map((item) => item.id));
+    let adicionados = 0;
+
+    lista.forEach((item) => {
+      if (!item || typeof item.quote !== "string" || typeof item.comment !== "string") return;
+      if (existentes.has(item.id)) return;
+      existentes.add(item.id);
+      comentarios.push(item);
+      adicionados++;
+    });
+
+    if (adicionados) salvarNoNavegador();
+    return adicionados;
   }
 
   app.modulos.comentarios = {
     inicializar,
-    reaplicarMarcacoes
+    reaplicarMarcacoes,
+    mesclar,
+    documentoAtual: () => hashDocumentoAtual,
+    recarregar() {
+      renderizarComentarios();
+      reaplicarMarcacoes();
+    }
   };
 })(window.LeitorClaude, window);

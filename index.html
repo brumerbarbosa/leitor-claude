@@ -18,12 +18,10 @@
     <aside id="app-sidebar" class="app-sidebar" aria-label="Navegação principal">
       <header class="sidebar-header">
         <button type="button" id="btn-sidebar-logo" class="marca" aria-label="Expandir ou recolher menu">
-          <img class="marca-logo" src="assets/icons/icon-leitor-claude.svg" alt="" width="50" height="50">
-          <div class="marca-texto">
-            <span class="marca-kicker">LEITOR INTELIGENTE</span>
-            <h1 class="titulo">Leitor Claude</h1>
-            <p class="marca-assinatura">Ouça. Revise. Comente.</p>
-          </div>
+          <img class="marca-logo" src="assets/icons/icon-leitor-claude.svg" alt="Leitor Claude" width="50" height="50">
+          <h1 class="marca-texto">
+            <img class="marca-logotipo" src="assets/icons/logo-leitor-claude.svg" alt="Leitor Claude" width="2759" height="800">
+          </h1>
         </button>
         <button type="button" id="btn-sidebar-toggle" class="sidebar-toggle" aria-label="Recolher menu" aria-controls="app-sidebar-conteudo" aria-expanded="true"><i class="icone" data-icon="chevron-left" aria-hidden="true"></i></button>
       </header>
@@ -78,9 +76,6 @@
             <button type="button" id="btn-editar-texto" aria-label="Alterar texto" aria-controls="entrada-editor" aria-expanded="false"><i class="icone btn-editar-icone" data-icon="pencil" aria-hidden="true"></i><span>Alterar texto</span></button>
             <div class="topbar-voz" title="Escolher voz da leitura">
               <span class="topbar-voz-dot" aria-hidden="true"></span>
-              <select id="voz-select-topbar" class="select-fonte" aria-hidden="true" tabindex="-1" hidden>
-                <option>Carregando vozes...</option>
-              </select>
               <button type="button" id="btn-voz-menu" class="seletor-contexto-gatilho" aria-label="Escolher voz da leitura" aria-haspopup="listbox" aria-expanded="false" aria-controls="voz-menu">
                 <i class="icone topbar-voz-icone" data-icon="audio-waveform" aria-hidden="true"></i>
                 <span id="voz-selecionada-label" class="topbar-voz-label">Voz</span>
@@ -152,7 +147,7 @@
 
               <footer class="leitura-rodape">
                 <div id="status" aria-live="polite"></div>
-                <span class="atalho-dica">Espaço: reproduzir ou pausar</span>
+                <span class="atalho-dica" title="Espaço: reproduzir ou pausar. Setas esquerda e direita: trecho anterior ou próximo. Mais e menos: velocidade. Home: voltar ao início.">Espaço: play/pausa · ←/→: trecho · +/-: velocidade · Home: início</span>
               </footer>
             </section>
           </div>
@@ -191,6 +186,7 @@
                     <button type="button" id="btn-selecionar-trechos" class="btn-com-icone" aria-pressed="false"><i class="icone icone-pequeno" data-icon="square-check" aria-hidden="true"></i><span>Marcar trecho</span></button>
                     <div class="painel-acoes">
                       <span id="copiado-ok" role="status">✓ copiado</span>
+                      <button type="button" id="btn-ouvir-revisao" class="btn-com-icone" title="Ouvir os comentários em voz alta" aria-pressed="false"><i class="icone icone-pequeno" data-icon="headphones" aria-hidden="true"></i><span>Ouvir</span></button>
                       <button type="button" id="btn-copiar-comentarios" class="btn-com-icone"><i class="icone icone-pequeno" data-icon="copy" aria-hidden="true"></i><span>Copiar</span></button>
                       <button type="button" id="btn-limpar-comentarios" class="btn-com-icone"><i class="icone icone-pequeno" data-icon="trash" aria-hidden="true"></i><span>Limpar</span></button>
                     </div>
@@ -217,7 +213,7 @@
         </section>
       </main>
 
-      <footer id="player-fixo" aria-label="Controles de reprodução" hidden>
+      <footer id="player-fixo" aria-label="Controles de reprodução" title="Atalhos: Espaço play/pausa · ←/→ trecho · +/- velocidade · Home volta ao início" hidden>
         <div class="player-timeline">
           <span id="tempo-atual" class="player-tempo" title="Tempo estimado" aria-label="Tempo estimado decorrido">00:00</span>
           <label class="sr-only" for="timeline">Posição estimada da leitura por trecho</label>
@@ -229,25 +225,15 @@
           <div id="player-trecho" class="player-trecho">Nenhum texto carregado</div>
 
           <div class="player-controles-principais">
-            <button type="button" id="btn-stop" class="player-btn player-btn-secundario" disabled title="Parar e voltar ao início" aria-label="Parar e voltar ao início"><i class="icone" data-icon="stop" aria-hidden="true"></i></button>
-            <button type="button" id="btn-retroceder" class="player-btn" disabled title="Trecho anterior" aria-label="Voltar ao trecho anterior"><i class="icone" data-icon="skip-back" aria-hidden="true"></i></button>
+            <button type="button" id="btn-stop" class="player-btn player-btn-secundario" disabled title="Parar e voltar ao início (Home volta sem interromper)" aria-label="Parar e voltar ao início"><i class="icone" data-icon="stop" aria-hidden="true"></i></button>
+            <button type="button" id="btn-retroceder" class="player-btn" disabled title="Trecho anterior (←)" aria-label="Voltar ao trecho anterior"><i class="icone" data-icon="skip-back" aria-hidden="true"></i></button>
             <button type="button" id="btn-play" class="player-btn player-btn-play" disabled aria-label="Reproduzir"><i class="icone" data-icon="play" aria-hidden="true"></i></button>
-            <button type="button" id="btn-avancar" class="player-btn" disabled title="Próximo trecho" aria-label="Avançar para o próximo trecho"><i class="icone" data-icon="skip-forward" aria-hidden="true"></i></button>
+            <button type="button" id="btn-avancar" class="player-btn" disabled title="Próximo trecho (→)" aria-label="Avançar para o próximo trecho"><i class="icone" data-icon="skip-forward" aria-hidden="true"></i></button>
             <button type="button" id="btn-volume" class="player-btn player-btn-secundario" title="Volume da leitura" aria-label="Volume da leitura" aria-haspopup="dialog" aria-expanded="false" aria-controls="volume-popup"><i class="icone" data-icon="volume" aria-hidden="true"></i></button>
           </div>
 
           <div class="velocidade-controle">
-            <select id="velocidade" class="select-fonte" aria-hidden="true" tabindex="-1" hidden>
-              <option value="0.75">0,75×</option>
-              <option value="1">1,0×</option>
-              <option value="1.25">1,25×</option>
-              <option value="1.5">1,5×</option>
-              <option value="1.8" selected>1,8×</option>
-              <option value="2">2,0×</option>
-              <option value="2.5">2,5×</option>
-              <option value="3">3,0×</option>
-            </select>
-            <button type="button" id="btn-velocidade-menu" class="seletor-contexto-gatilho velocidade-gatilho" aria-label="Velocidade da leitura: 1,8 vezes" aria-haspopup="listbox" aria-expanded="false" aria-controls="velocidade-menu">
+            <button type="button" id="btn-velocidade-menu" class="seletor-contexto-gatilho velocidade-gatilho" title="Velocidade da leitura (+ ou -)" aria-label="Velocidade da leitura: 1,8 vezes" aria-haspopup="listbox" aria-expanded="false" aria-controls="velocidade-menu">
               <span id="vel-display">1,8×</span>
               <i class="icone seletor-chevron" data-icon="chevron-down" aria-hidden="true"></i>
             </button>
@@ -282,9 +268,74 @@
       <span><strong id="ajuste-tema-titulo">Tema escuro</strong><small id="ajuste-tema-descricao">Mudar para tema claro</small></span>
       <i class="icone" data-icon="chevron-right" aria-hidden="true"></i>
     </button>
+    <button type="button" id="ajuste-filtro" class="menu-ajuste-item" role="menuitem">
+      <span class="menu-ajuste-icone" aria-hidden="true"><i class="icone" data-icon="filter" aria-hidden="true"></i></span>
+      <span><strong>Filtro da leitura</strong><small>Escolher o que sai da leitura</small></span>
+      <i class="icone" data-icon="chevron-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" id="ajuste-exportar-md" class="menu-ajuste-item" role="menuitem">
+      <span class="menu-ajuste-icone" aria-hidden="true"><i class="icone" data-icon="download" aria-hidden="true"></i></span>
+      <span><strong>Exportar revisão</strong><small>Markdown para colar no chat</small></span>
+      <i class="icone" data-icon="chevron-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" id="ajuste-exportar-json" class="menu-ajuste-item" role="menuitem">
+      <span class="menu-ajuste-icone" aria-hidden="true"><i class="icone" data-icon="download" aria-hidden="true"></i></span>
+      <span><strong>Salvar backup</strong><small>JSON com texto, notas e comentários</small></span>
+      <i class="icone" data-icon="chevron-right" aria-hidden="true"></i>
+    </button>
+    <button type="button" id="ajuste-importar" class="menu-ajuste-item" role="menuitem">
+      <span class="menu-ajuste-icone" aria-hidden="true"><i class="icone" data-icon="upload" aria-hidden="true"></i></span>
+      <span><strong>Restaurar backup</strong><small>Abrir um JSON exportado antes</small></span>
+      <i class="icone" data-icon="chevron-right" aria-hidden="true"></i>
+    </button>
   </div>
 
   <button type="button" id="btn-comentar-flutuante" class="btn-com-icone" hidden><i class="icone icone-pequeno" data-icon="message-plus" aria-hidden="true"></i><span>Comentar seleção</span></button>
+
+  <input type="file" id="arquivo-importar" accept="application/json,.json" hidden>
+
+  <div id="area-solta-arquivo" class="area-solta-arquivo" hidden>
+    <div class="solta-arquivo-caixa">
+      <i class="icone" data-icon="clipboard-plus" aria-hidden="true"></i>
+      <strong>Solte o arquivo para ouvir</strong>
+      <small>Aceita .md, .markdown e .txt</small>
+    </div>
+  </div>
+
+  <dialog id="dialogo-filtro" class="dialogo-filtro" aria-labelledby="dialogo-filtro-titulo">
+    <div class="dialogo-filtro-cabecalho">
+      <strong id="dialogo-filtro-titulo">Filtro da leitura</strong>
+      <p>Escolha o que sai da leitura em voz alta. Blocos de código nunca são alterados.</p>
+    </div>
+
+    <div id="filtro-categorias" class="filtro-categorias"></div>
+
+    <div class="filtro-termos">
+      <label for="filtro-termo-novo">Remover linhas que contenham</label>
+      <div class="filtro-termo-entrada">
+        <input type="text" id="filtro-termo-novo" placeholder="ex: TODO:" autocomplete="off">
+        <button type="button" id="filtro-termo-adicionar" class="btn-com-icone"><i class="icone icone-pequeno" data-icon="plus" aria-hidden="true"></i><span>Adicionar</span></button>
+      </div>
+      <ul id="filtro-lista-termos" class="filtro-lista-termos"></ul>
+    </div>
+
+    <p id="filtro-previa" class="filtro-previa" aria-live="polite"></p>
+
+    <div class="dialogo-acoes">
+      <button type="button" id="filtro-restaurar">Restaurar padrão</button>
+      <button type="button" id="filtro-cancelar">Cancelar</button>
+      <button type="button" id="filtro-salvar" class="filtro-salvar">Aplicar</button>
+    </div>
+  </dialog>
+
+  <dialog id="dialogo-confirmacao" class="dialogo-confirmacao" aria-labelledby="dialogo-titulo" aria-describedby="dialogo-descricao">
+    <strong id="dialogo-titulo">Confirmar</strong>
+    <p id="dialogo-descricao">Deseja continuar?</p>
+    <div class="dialogo-acoes">
+      <button type="button" id="dialogo-cancelar">Cancelar</button>
+      <button type="button" id="dialogo-confirmar" class="dialogo-perigo">Confirmar</button>
+    </div>
+  </dialog>
 
   <!-- Scripts tradicionais com defer preservam a abertura direta via file://. -->
   <script defer src="js/app.js"></script>
@@ -294,6 +345,8 @@
   <script defer src="js/leitor.js"></script>
   <script defer src="js/comentarios.js"></script>
   <script defer src="js/notas.js"></script>
+  <script defer src="js/dados.js"></script>
+  <script defer src="js/ajustes.js"></script>
 </body>
 
 </html>

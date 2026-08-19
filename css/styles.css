@@ -19,6 +19,8 @@
   --raio-medio: 8px;
   --raio-grande: 10px;
   --sombra-flutuante: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --cor-palavra-lendo: #5a4ec4;
+  --cor-palavra-lendo-texto: #ffffff;
   --altura-player: 108px;
 }
 
@@ -103,6 +105,8 @@ input {
 .icone[data-icon="chevron-right"] { --icone-fonte: url("../assets/icons/chevron-right.svg"); }
 .icone[data-icon="clipboard-plus"] { --icone-fonte: url("../assets/icons/clipboard-plus.svg"); }
 .icone[data-icon="copy"] { --icone-fonte: url("../assets/icons/copy.svg"); }
+.icone[data-icon="download"] { --icone-fonte: url("../assets/icons/download.svg"); }
+.icone[data-icon="filter"] { --icone-fonte: url("../assets/icons/filter.svg"); }
 .icone[data-icon="headphones"] { --icone-fonte: url("../assets/icons/headphones.svg"); }
 .icone[data-icon="info"] { --icone-fonte: url("../assets/icons/info.svg"); }
 .icone[data-icon="message-plus"] { --icone-fonte: url("../assets/icons/message-plus.svg"); }
@@ -122,6 +126,7 @@ input {
 .icone[data-icon="stop"] { --icone-fonte: url("../assets/icons/stop.svg"); }
 .icone[data-icon="sun"] { --icone-fonte: url("../assets/icons/sun.svg"); }
 .icone[data-icon="trash"] { --icone-fonte: url("../assets/icons/trash.svg"); }
+.icone[data-icon="upload"] { --icone-fonte: url("../assets/icons/upload.svg"); }
 .icone[data-icon="volume"] { --icone-fonte: url("../assets/icons/volume.svg"); }
 .icone[data-icon="x"] { --icone-fonte: url("../assets/icons/x.svg"); }
 
@@ -212,7 +217,6 @@ textarea::placeholder {
   height: 50px;
 }
 
-.marca-kicker,
 .secao-kicker,
 .compositor-rotulo {
   display: block;
@@ -220,20 +224,6 @@ textarea::placeholder {
   font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0.12em;
-}
-
-.titulo {
-  margin: 1px 0 0;
-  color: var(--cor-primaria);
-  font-size: 1.22rem;
-  line-height: 1.15;
-  letter-spacing: 0.02em;
-}
-
-.marca-assinatura {
-  margin-top: 3px;
-  color: var(--cor-texto-suave);
-  font-size: 0.78rem;
 }
 
 .app-badge,
@@ -519,6 +509,7 @@ textarea::placeholder {
 }
 
 #texto-renderizado [data-elid] {
+  cursor: pointer;
   border-radius: 4px;
   transition:
     background-color 0.18s,
@@ -531,7 +522,6 @@ textarea::placeholder {
 
 #texto-renderizado .lendo {
   background: #2a1f5e;
-  box-shadow: -4px 0 0 var(--cor-primaria-forte);
 }
 
 .leitura-rodape {
@@ -2040,29 +2030,12 @@ body {
   height: 42px;
 }
 
-.marca-kicker,
 .secao-kicker,
 .compositor-rotulo {
   color: #7f87a8;
   font-size: 11px;
   line-height: 14px;
   letter-spacing: 0.1em;
-}
-
-.app-sidebar .marca-kicker {
-  letter-spacing: 0.12em;
-}
-
-.app-sidebar .titulo {
-  margin-top: 2px;
-  color: var(--cor-texto);
-  font-size: 19px;
-  line-height: 23px;
-  letter-spacing: 0;
-}
-
-.app-sidebar .marca-assinatura {
-  display: none;
 }
 
 .sidebar-toggle {
@@ -2410,8 +2383,7 @@ body {
 
 #texto-renderizado .lendo {
   padding: 10px 14px;
-  border-left: 3px solid var(--cor-primaria);
-  border-radius: 0 10px 10px 0;
+  border-radius: 10px;
   background: #1c2040;
   box-shadow: none;
   color: #fff;
@@ -4339,6 +4311,8 @@ body.tema-claro {
   --cor-texto: #28304a;
   --cor-texto-forte: #11182d;
   --cor-texto-suave: #65708d;
+  --cor-palavra-lendo: #4c3eb8;
+  --cor-palavra-lendo-texto: #ffffff;
   background: #f5f7fc;
   color: #28304a;
 }
@@ -5010,7 +4984,6 @@ body.tema-claro .sidebar-toggle:focus-visible {
 }
 
 body.tema-claro .sidebar-grupo,
-body.tema-claro .marca-kicker,
 body.tema-claro .entrada-resumo-meta,
 body.tema-claro .comentarios-vazio,
 body.tema-claro .menu-contexto-texto small,
@@ -5375,4 +5348,507 @@ body.tema-claro #texto-renderizado .trecho-marcado-checkbox {
   body:has(.app-frame.sidebar-recolhida) .menu-ajustes-mobile {
     left: calc(var(--largura-sidebar-recolhida) + 12px);
   }
+}
+
+/* Cartão do comentário que está sendo lido em voz alta. */
+.comentario-item.ouvindo {
+  border-color: var(--cor-primaria);
+  background: rgb(108 92 231 / 14%);
+}
+
+#btn-ouvir-revisao[aria-pressed="true"] {
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+}
+
+body.tema-claro .comentario-item.ouvindo {
+  border-color: #7464dc;
+  background: #eeecff;
+}
+
+/* Diálogo do filtro: mesma linguagem do diálogo de confirmação, com mais conteúdo. */
+.dialogo-filtro {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 22px;
+  overflow-y: auto;
+  border: 1px solid #3b4467;
+  border-radius: 16px;
+  background: #12182b;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 44%);
+  color: #e9e8f2;
+}
+
+.dialogo-filtro::backdrop {
+  background: rgb(6 9 20 / 62%);
+}
+
+.dialogo-filtro-cabecalho strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--cor-texto-forte);
+  font-size: 1rem;
+}
+
+.dialogo-filtro-cabecalho p {
+  margin-bottom: 16px;
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.filtro-categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 18px;
+}
+
+.filtro-categoria {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.filtro-categoria:hover {
+  background: #1b2138;
+}
+
+.filtro-categoria input {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+  accent-color: var(--cor-primaria-forte);
+  cursor: pointer;
+}
+
+.filtro-categoria span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filtro-categoria strong {
+  color: var(--cor-texto);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.filtro-categoria small {
+  color: var(--cor-texto-suave);
+  font-size: 0.76rem;
+}
+
+.filtro-termos > label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--cor-texto);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.filtro-termo-entrada {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#filtro-termo-novo {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 999px;
+  outline: none;
+  background: #0e1424;
+  color: var(--cor-texto);
+  font-size: 0.85rem;
+}
+
+#filtro-termo-novo:focus-visible {
+  border-color: var(--cor-primaria);
+}
+
+#filtro-termo-adicionar {
+  flex: 0 0 auto;
+  background: var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+.filtro-lista-termos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.filtro-termo {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 6px 4px 12px;
+  border: 1px solid var(--cor-borda-forte);
+  border-radius: 999px;
+  background: #1b2138;
+  font-size: 0.8rem;
+}
+
+.filtro-termo-remover {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  place-items: center;
+  background: transparent;
+  color: var(--cor-texto-suave);
+}
+
+.filtro-termo-remover:hover,
+.filtro-termo-remover:focus-visible {
+  color: var(--cor-perigo);
+}
+
+.filtro-termo-vazio {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.filtro-previa {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1b2138;
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+#filtro-restaurar {
+  margin-right: auto;
+  background: transparent;
+  color: var(--cor-texto-suave);
+}
+
+#filtro-restaurar:hover,
+#filtro-restaurar:focus-visible {
+  color: var(--cor-texto);
+}
+
+#filtro-cancelar {
+  background: var(--cor-borda);
+  color: var(--cor-texto-suave);
+}
+
+.filtro-salvar {
+  background: var(--cor-primaria-forte);
+  color: #fff;
+}
+
+body.tema-claro .dialogo-filtro {
+  border-color: #d7dceb;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgb(45 55 82 / 20%);
+  color: #28304a;
+}
+
+body.tema-claro .dialogo-filtro::backdrop {
+  background: rgb(38 46 68 / 38%);
+}
+
+body.tema-claro .filtro-categoria:hover {
+  background: #f0f3fa;
+}
+
+body.tema-claro #filtro-termo-novo {
+  background: #ffffff;
+  color: #28304a;
+}
+
+body.tema-claro .filtro-termo,
+body.tema-claro .filtro-previa {
+  background: #f0f3fa;
+}
+
+body.tema-claro #filtro-cancelar,
+body.tema-claro #filtro-termo-adicionar {
+  background: #e8ecf6;
+  color: #4a5573;
+}
+
+/* Aviso de arrastar arquivo: cobre a janela para não exigir mira no campo de texto. */
+.area-solta-arquivo {
+  position: fixed;
+  z-index: 3000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(6 9 20 / 72%);
+}
+
+.solta-arquivo-caixa {
+  display: flex;
+  max-width: 320px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  padding: 28px 34px;
+  border: 2px dashed var(--cor-primaria);
+  border-radius: 18px;
+  background: #12182b;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 44%);
+  text-align: center;
+}
+
+.solta-arquivo-caixa .icone {
+  width: 30px;
+  height: 30px;
+  color: var(--cor-primaria);
+}
+
+.solta-arquivo-caixa strong {
+  color: var(--cor-texto-forte);
+  font-size: 1rem;
+}
+
+.solta-arquivo-caixa small {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+body.tema-claro .area-solta-arquivo {
+  background: rgb(38 46 68 / 46%);
+}
+
+body.tema-claro .solta-arquivo-caixa {
+  border-color: #5b4bd6;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgb(45 55 82 / 20%);
+}
+
+/* Diálogo de confirmação: substitui o confirm() do navegador mantendo o tema do app. */
+.dialogo-confirmacao {
+  width: min(380px, calc(100vw - 32px));
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #3b4467;
+  border-radius: 16px;
+  background: #12182b;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 44%);
+  color: #e9e8f2;
+}
+
+.dialogo-confirmacao::backdrop {
+  background: rgb(6 9 20 / 62%);
+}
+
+.dialogo-confirmacao strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--cor-texto-forte);
+  font-size: 1rem;
+}
+
+.dialogo-confirmacao p {
+  margin-bottom: 18px;
+  color: var(--cor-texto-suave);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.dialogo-acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+#dialogo-cancelar {
+  background: var(--cor-borda);
+  color: var(--cor-texto-suave);
+}
+
+#dialogo-cancelar:hover,
+#dialogo-cancelar:focus-visible {
+  background: var(--cor-borda-forte);
+  color: var(--cor-texto);
+}
+
+.dialogo-perigo {
+  background: var(--cor-perigo);
+  color: #fff;
+}
+
+.dialogo-perigo:hover,
+.dialogo-perigo:focus-visible {
+  background: #b8282a;
+}
+
+body.tema-claro .dialogo-confirmacao {
+  border-color: #d7dceb;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgb(45 55 82 / 20%);
+  color: #28304a;
+}
+
+body.tema-claro .dialogo-confirmacao::backdrop {
+  background: rgb(38 46 68 / 38%);
+}
+
+body.tema-claro #dialogo-cancelar {
+  background: #e8ecf6;
+  color: #4a5573;
+}
+
+body.tema-claro #dialogo-cancelar:hover,
+body.tema-claro #dialogo-cancelar:focus-visible {
+  background: #d7dceb;
+  color: #28304a;
+}
+
+/* Bloco de código: fica recolhido como referência visual, sem entrar na leitura. */
+#texto-renderizado .bloco-codigo {
+  margin: 12px 0;
+}
+
+#texto-renderizado .bloco-codigo details {
+  border: 1px solid var(--cor-borda);
+  border-radius: 10px;
+  background: var(--cor-superficie-suave);
+  overflow: hidden;
+}
+
+#texto-renderizado .bloco-codigo summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 9px 14px;
+  cursor: pointer;
+  color: var(--cor-texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+  list-style: none;
+}
+
+#texto-renderizado .bloco-codigo summary::-webkit-details-marker {
+  display: none;
+}
+
+#texto-renderizado .bloco-codigo summary::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  transition: transform 0.15s;
+  -webkit-mask: url("../assets/icons/chevron-right.svg") center / contain no-repeat;
+  mask: url("../assets/icons/chevron-right.svg") center / contain no-repeat;
+}
+
+#texto-renderizado .bloco-codigo details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+#texto-renderizado .bloco-codigo summary:hover,
+#texto-renderizado .bloco-codigo summary:focus-visible {
+  color: var(--cor-primaria);
+  outline: none;
+}
+
+#texto-renderizado .bloco-codigo pre {
+  max-height: 340px;
+  margin: 0;
+  padding: 12px 14px;
+  overflow: auto;
+  border-top: 1px solid var(--cor-borda);
+}
+
+#texto-renderizado .bloco-codigo pre code {
+  padding: 0;
+  background: none;
+  color: var(--cor-texto);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+body.tema-claro #texto-renderizado .bloco-codigo details {
+  border-color: #d7dceb;
+  background: #f7f9fd;
+}
+
+body.tema-claro #texto-renderizado .bloco-codigo pre code {
+  color: #28304a;
+}
+
+/* Links do texto lido: abrem em nova aba e não competem com o realce da leitura. */
+#texto-renderizado a {
+  border-radius: 3px;
+  color: var(--cor-info);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+/* Negrito, itálico e código dentro de um link acompanham a cor do próprio link. */
+#texto-renderizado a strong,
+#texto-renderizado a em,
+#texto-renderizado a code {
+  color: inherit;
+}
+
+#texto-renderizado a:hover,
+#texto-renderizado a:focus-visible {
+  color: var(--cor-primaria);
+  text-decoration-thickness: 2px;
+  outline: none;
+}
+
+#texto-renderizado a:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
+}
+
+body.tema-claro #texto-renderizado a {
+  color: #1c5fb8;
+}
+
+body.tema-claro #texto-renderizado a:hover,
+body.tema-claro #texto-renderizado a:focus-visible {
+  color: #4939a5;
+}
+
+/*
+ * Palavra sendo falada. O realce nativo pinta sem inserir elementos no texto,
+ * por isso não interfere nas marcações de comentário nem nas âncoras salvas.
+ */
+::highlight(palavra-lendo) {
+  background-color: var(--cor-palavra-lendo);
+  color: var(--cor-palavra-lendo-texto);
+}
+
+/*
+ * Marca da sidebar. O logotipo completo já contém o símbolo, então o símbolo
+ * isolado aparece apenas quando a sidebar está recolhida. No celular o cabeçalho
+ * inteiro sai de cena e a navegação vira barra inferior, então não há marca lá.
+ */
+.marca-logotipo {
+  display: block;
+  width: 100%;
+  max-width: 152px;
+  height: auto;
+}
+
+.app-sidebar .marca-logo {
+  display: none;
+}
+
+.sidebar-recolhida .app-sidebar .marca-logo {
+  display: block;
 }

@@ -60,16 +60,31 @@
       atualizarContagem();
     });
 
-    el["btn-limpar-notas"].addEventListener("click", () => {
-      if (!el["notas-textarea"].value || !global.confirm("Limpar todas as notas?")) return;
+    el["btn-limpar-notas"].addEventListener("click", async () => {
+      if (!el["notas-textarea"].value) return;
+
+      const confirmado = await app.modulos.shell.confirmar({
+        titulo: "Limpar notas",
+        descricao: "As anotações deste navegador serão apagadas. Não é possível desfazer.",
+        acaoRotulo: "Limpar notas"
+      });
+      if (!confirmado) return;
       el["notas-textarea"].value = "";
       try { localStorage.removeItem(CHAVE_NOTAS); } catch (_) { /* armazenamento indisponível */ }
       atualizarContagem();
     });
   }
 
+  function definirTexto(texto) {
+    const el = app.elementos;
+    el["notas-textarea"].value = texto;
+    salvarLocal(CHAVE_NOTAS, texto);
+    atualizarContagem();
+  }
+
   app.modulos.notas = {
     inicializar,
+    definirTexto,
     abrirSecao,
     abrirAba: abrirSecao
   };

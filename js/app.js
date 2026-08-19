@@ -30,7 +30,7 @@
   function mapearElementos() {
     const ids = [
       "app-frame", "app-sidebar", "app-sidebar-conteudo", "btn-sidebar-toggle", "btn-sidebar-logo",
-      "leitura-topbar", "voz-select-topbar", "painel-comentarios-count",
+      "leitura-topbar", "painel-comentarios-count",
       "nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-ajustes-mobile",
       "nav-preferencias", "menu-ajustes-mobile", "ajuste-velocidade-mobile", "ajuste-velocidade-valor", "ajuste-tema-mobile", "ajuste-tema-titulo", "ajuste-tema-descricao", "area-trabalho", "entrada-card", "entrada-editor",
       "entrada-resumo", "entrada-resumo-titulo", "entrada-resumo-meta", "btn-editar-texto", "btn-cancelar-edicao",
@@ -40,12 +40,16 @@
       "btn-acompanhar", "acompanhar-label", "barra-selecao-trechos", "selecao-trechos-status", "btn-cancelar-selecao-trechos", "btn-comentar-trecho-marcado", "painel-lateral",
       "painel-lateral-conteudo", "btn-fechar-painel", "painel-backdrop", "painel-notas",
       "painel-comentarios", "comentarios-count", "lista-comentarios",
-      "btn-selecionar-trechos", "btn-copiar-comentarios", "btn-limpar-comentarios", "copiado-ok",
+      "btn-selecionar-trechos", "btn-ouvir-revisao", "btn-copiar-comentarios", "btn-limpar-comentarios", "copiado-ok",
       "btn-comentar-flutuante", "popup-comentario", "popup-quote",
+      "dialogo-confirmacao", "dialogo-titulo", "dialogo-descricao", "dialogo-confirmar", "dialogo-cancelar",
+      "area-solta-arquivo", "ajuste-exportar-md", "ajuste-exportar-json", "ajuste-importar", "arquivo-importar",
+      "ajuste-filtro", "dialogo-filtro", "filtro-categorias", "filtro-termo-novo", "filtro-termo-adicionar",
+      "filtro-lista-termos", "filtro-previa", "filtro-restaurar", "filtro-cancelar", "filtro-salvar",
       "popup-input", "popup-salvar", "popup-cancelar", "btn-mic", "notas-box",
       "notas-textarea", "notas-chars", "btn-limpar-notas", "player-fixo",
       "timeline", "tempo-atual", "tempo-total", "player-trecho", "btn-play",
-      "btn-stop", "btn-retroceder", "btn-avancar", "velocidade", "vel-display",
+      "btn-stop", "btn-retroceder", "btn-avancar", "vel-display",
       "btn-volume", "volume-popup", "volume-slider", "volume-valor",
       "btn-voz-menu", "voz-selecionada-label", "voz-menu", "btn-velocidade-menu", "velocidade-menu"
     ];
@@ -85,6 +89,45 @@
     botao.setAttribute("aria-expanded", String(aberto));
   }
 
+  /*
+   * Substitui o confirm() do navegador, que ignora o tema do app. Usa o <dialog>
+   * nativo, que já traz foco preso, Esc para cancelar e fundo modal.
+   */
+  function confirmar({ titulo, descricao, acaoRotulo = "Confirmar" }) {
+    const el = app.elementos;
+    const dialogo = el["dialogo-confirmacao"];
+    const gatilho = document.activeElement;
+
+    if (!dialogo?.showModal) {
+      return Promise.resolve(global.confirm(`${titulo}\n\n${descricao}`));
+    }
+
+    el["dialogo-titulo"].textContent = titulo;
+    el["dialogo-descricao"].textContent = descricao;
+    el["dialogo-confirmar"].textContent = acaoRotulo;
+
+    return new Promise((resolver) => {
+      const encerrar = (resultado) => {
+        el["dialogo-confirmar"].removeEventListener("click", aoConfirmar);
+        el["dialogo-cancelar"].removeEventListener("click", aoCancelar);
+        dialogo.removeEventListener("close", aoFechar);
+        dialogo.close();
+        if (gatilho instanceof HTMLElement) gatilho.focus({ preventScroll: true });
+        resolver(resultado);
+      };
+      const aoConfirmar = () => encerrar(true);
+      const aoCancelar = () => encerrar(false);
+      const aoFechar = () => encerrar(false);
+
+      el["dialogo-confirmar"].addEventListener("click", aoConfirmar);
+      el["dialogo-cancelar"].addEventListener("click", aoCancelar);
+      dialogo.addEventListener("close", aoFechar);
+
+      dialogo.showModal();
+      el["dialogo-cancelar"].focus({ preventScroll: true });
+    });
+  }
+
   function definirPainelMovelAberto(aberto) {
     const el = app.elementos;
     const modoMovel = global.matchMedia?.("(max-width: 940px)").matches;
@@ -94,7 +137,7 @@
     document.body.classList.toggle("painel-movel-aberto", mostrar);
   }
 
-  app.modulos.shell = { definirPainelMovelAberto };
+  app.modulos.shell = { definirPainelMovelAberto, confirmar };
 
   function definirTemaClaro(valor, persistir = true) {
     const claro = Boolean(valor);
@@ -103,6 +146,7 @@
     el["ajuste-tema-titulo"].textContent = claro ? "Tema claro" : "Tema escuro";
     el["ajuste-tema-descricao"].textContent = claro ? "Mudar para tema escuro" : "Mudar para tema claro";
     el["ajuste-tema-mobile"].querySelector(".icone")?.setAttribute("data-icon", claro ? "sun" : "moon");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", claro ? "#f5f7fc" : "#0c1020");
     if (persistir) salvarPreferencia(CHAVE_TEMA, claro);
   }
 
@@ -121,6 +165,8 @@
       });
     }
   }
+
+  app.modulos.shell.definirMenuAjustesAberto = definirMenuAjustesAberto;
 
   function definirNavegacaoAtiva(id) {
     ["nav-nova-leitura", "nav-leitura", "nav-notas", "nav-comentarios", "nav-preferencias"].forEach((navId) => {
@@ -179,7 +225,8 @@
     }
   }
 
-  function prepararNovaLeitura(texto) {
+  function prepararNovaLeitura(texto, opcoes = {}) {
+    const { tocar = true } = opcoes;
     const el = app.elementos;
     app.modulos.leitor.parar();
 
@@ -199,8 +246,10 @@
     app.modulos.renderizador.renderizar(resultado.texto);
     app.estado.textoCarregado = texto;
     atualizarModoLeitura();
-    if (app.estado.frases.length) app.modulos.leitor.tocarDe(0);
+    if (app.estado.frases.length && tocar) app.modulos.leitor.tocarDe(0);
   }
+
+  app.modulos.entrada = { prepararNovaLeitura };
 
   function configurarCarregamento() {
     const el = app.elementos;
@@ -266,9 +315,77 @@
     });
   }
 
+  /*
+   * Arrastar e soltar cobre a janela inteira: durante a leitura o campo de texto
+   * fica recolhido, e um alvo pequeno seria difícil de acertar.
+   */
+  function configurarArrastarArquivo() {
+    const el = app.elementos;
+    const EXTENSOES = /\.(md|markdown|txt|text)$/i;
+    let profundidade = 0;
+
+    const mostrarAviso = (mostrar) => {
+      el["area-solta-arquivo"].hidden = !mostrar;
+    };
+
+    const temArquivo = (evento) =>
+      Array.from(evento.dataTransfer?.types || []).includes("Files");
+
+    document.addEventListener("dragenter", (evento) => {
+      if (!temArquivo(evento)) return;
+      evento.preventDefault();
+      profundidade++;
+      mostrarAviso(true);
+    });
+
+    document.addEventListener("dragover", (evento) => {
+      if (!temArquivo(evento)) return;
+      evento.preventDefault();
+      evento.dataTransfer.dropEffect = "copy";
+    });
+
+    document.addEventListener("dragleave", (evento) => {
+      if (!temArquivo(evento)) return;
+      profundidade = Math.max(0, profundidade - 1);
+      if (!profundidade) mostrarAviso(false);
+    });
+
+    document.addEventListener("drop", async (evento) => {
+      if (!temArquivo(evento)) return;
+      evento.preventDefault();
+      profundidade = 0;
+      mostrarAviso(false);
+
+      const arquivo = evento.dataTransfer.files[0];
+      if (!arquivo) return;
+
+      if (!EXTENSOES.test(arquivo.name) && !arquivo.type.startsWith("text/")) {
+        el.status.textContent = `“${arquivo.name}” não é um arquivo de texto.`;
+        el["voz-info"].textContent = `Arquivo ignorado: ${arquivo.name} não é texto.`;
+        return;
+      }
+
+      try {
+        const conteudo = (await arquivo.text()).trim();
+        if (!conteudo) {
+          el.status.textContent = `“${arquivo.name}” está vazio.`;
+          return;
+        }
+
+        el["input-texto"].value = conteudo;
+        el["input-texto"].dispatchEvent(new Event("input", { bubbles: true }));
+        prepararNovaLeitura(conteudo);
+        el.status.textContent = `${arquivo.name} carregado.`;
+      } catch (_) {
+        el.status.textContent = `Não foi possível ler “${arquivo.name}”.`;
+      }
+    });
+  }
+
   function configurarShell() {
     const el = app.elementos;
     const estadoSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_SIDEBAR, false);
+    /* O tema escuro é o padrão da marca; o claro só entra por escolha em Configurações. */
     const temaClaroSalvo = app.modulos.seguranca.lerJsonLocal(CHAVE_TEMA, false);
     definirSidebarRecolhida(Boolean(estadoSalvo), false);
     definirTemaClaro(Boolean(temaClaroSalvo), false);
@@ -385,22 +502,43 @@
         Boolean(alvo.closest("[contenteditable='true']"))
       );
 
-      if (editavel) return;
+      /* Combinações com modificador pertencem ao navegador. */
+      if (editavel || evento.ctrlKey || evento.metaKey || evento.altKey) return;
+      if (!app.estado.frases.length) return;
 
-      if (evento.code === "Space" && app.estado.frases.length) {
-        evento.preventDefault();
-        app.modulos.leitor.alternarPlayPause();
-      }
+      const leitor = app.modulos.leitor;
+      const tocando = app.estado.reproduzindo && !app.estado.emPausa;
+      const acoes = {
+        Space: () => leitor.alternarPlayPause(),
+        ArrowRight: () => leitor.pular(1),
+        ArrowLeft: () => leitor.pular(-1),
+        Home: () => leitor.posicionar(0, tocando),
+        Mais: () => leitor.ajustarVelocidade(1),
+        Menos: () => leitor.ajustarVelocidade(-1)
+      };
+
+      let acao = null;
+      if (evento.code === "Space") acao = acoes.Space;
+      else if (evento.key === "+" || evento.key === "=") acao = acoes.Mais;
+      else if (evento.key === "-" || evento.key === "_") acao = acoes.Menos;
+      else acao = acoes[evento.key];
+
+      if (!acao) return;
+      evento.preventDefault();
+      acao();
     });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     mapearElementos();
+    app.modulos.ajustes.inicializar();
     app.modulos.renderizador.inicializar();
     app.modulos.leitor.inicializar();
     app.modulos.comentarios.inicializar();
     app.modulos.notas.inicializar();
+    app.modulos.dados.inicializar();
     configurarCarregamento();
+    configurarArrastarArquivo();
     configurarShell();
     configurarAtalhos();
   });

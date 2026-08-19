@@ -2,21 +2,51 @@
   "use strict";
 
   const LIMITE_SEGMENTO = 240;
+  /* O realce da palavra falada usa a Custom Highlight API: pinta sem alterar o DOM,
+     preservando marcações de comentário e as âncoras salvas por offset. */
+  const SUPORTA_REALCE = typeof global.Highlight === "function"
+    && typeof global.CSS !== "undefined"
+    && Boolean(global.CSS.highlights);
+  const NOME_REALCE = "palavra-lendo";
+  const JANELA_BUSCA = 14;
   let prefereMovimentoReduzido = false;
+  let realcePalavra = null;
+  let slotsPalavras = [];
+  let tokensSegmento = [];
+  let mapaSegmento = [];
+  let elidKaraoke = null;
+
+  /*
+   * Marcadores da área de uso privado do Unicode isolam código e endereços de link
+   * antes das regras de ênfase, para que `_` ou `*` internos não os quebrem.
+   */
+  const MARCA_INICIO = String.fromCharCode(0xE000);
+  const MARCA_FIM = String.fromCharCode(0xE001);
+  const PADRAO_LINK = /\[([^\]\n]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g;
+  const PADRAO_RESERVADO = new RegExp(`${MARCA_INICIO}([0-9]+)${MARCA_FIM}`, "g");
+
+  function urlSegura(url) {
+    return /^(https?:|mailto:)/i.test(url) || url.startsWith("#") || url.startsWith("/");
+  }
 
   function processarInline(texto) {
-    /* O código sai primeiro para que `_` e `*` internos não virem ênfase. */
-    const codigos = [];
+    const reservados = [];
+    const reservar = (valor) => `${MARCA_INICIO}${reservados.push(valor) - 1}${MARCA_FIM}`;
+
     return app.modulos.seguranca.escaparHtml(texto)
-      .replace(/`([^`\n]+)`/g, (_, codigo) => {
-        codigos.push(codigo);
-        return `${codigos.length - 1}`;
+      .replace(/`([^`\n]+)`/g, (_, codigo) => reservar(`<code>${codigo}</code>`))
+      .replace(PADRAO_LINK, (original, rotulo, destino) => {
+        /* Endereços fora de http, https, mailto ou internos seguem como texto comum. */
+        if (!urlSegura(destino)) return original;
+        /* A tag inteira fica reservada: `_blank` e `noopener` não podem virar ênfase. */
+        const abertura = reservar(`<a href="${destino}" target="_blank" rel="noopener noreferrer">`);
+        return `${abertura}${rotulo}${reservar("</a>")}`;
       })
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
       .replace(/__(.+?)__/g, "<strong>$1</strong>")
       .replace(/_([^_]+)_/g, "<em>$1</em>")
-      .replace(/(\d+)/g, (_, indice) => `<code>${codigos[Number(indice)]}</code>`);
+      .replace(PADRAO_RESERVADO, (_, indice) => reservados[Number(indice)]);
   }
 
   function processarTokenCodigo(codigo) {
@@ -37,6 +67,7 @@
   function removerMarkdownInline(texto) {
     return texto
       .replace(/`([^`\n]+)`/g, (_, codigo) => processarTokenCodigo(codigo))
+      .replace(PADRAO_LINK, "$1")
       .replace(/\*\*(.+?)\*\*/g, "$1")
       .replace(/\*(.+?)\*/g, "$1")
       .replace(/__(.+?)__/g, "$1")
@@ -142,6 +173,156 @@
       .filter(Boolean);
   }
 
+  function encontrarPalavras(texto) {
+    const regex = /[\p{L}\p{N}]+(?:['’_-][\p{L}\p{N}]+)*/gu;
+    const achados = [];
+    let achado;
+    while ((achado = regex.exec(texto)) !== null) {
+      achados.push({ texto: achado[0], inicio: achado.index, fim: achado.index + achado[0].length });
+    }
+    return achados;
+  }
+
+  function normalizarPalavra(texto) {
+    return texto
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  function mapearPalavrasDoElemento(elemento) {
+    const walker = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
+    const slots = [];
+
+    while (walker.nextNode()) {
+      const no = walker.currentNode;
+      encontrarPalavras(no.textContent).forEach((palavra) => {
+        slots.push({
+          no,
+          inicio: palavra.inicio,
+          fim: palavra.fim,
+          chave: normalizarPalavra(palavra.texto)
+        });
+      });
+    }
+
+    return slots;
+  }
+
+  /*
+   * O texto falado não é idêntico ao texto na tela (o Markdown sai e o código vira
+   * palavras separadas), então o alinhamento avança por comparação de palavras, com
+   * uma janela de busca. Uma palavra sem correspondência apenas fica sem realce.
+   */
+  function alinharSegmento(frase, slots, cursorInicial) {
+    const tokens = encontrarPalavras(frase || "").map((palavra) => ({
+      inicio: palavra.inicio,
+      fim: palavra.fim,
+      chave: normalizarPalavra(palavra.texto)
+    }));
+    const mapa = [];
+    let cursor = cursorInicial;
+    let acumulado = "";
+
+    tokens.forEach((token) => {
+      const slotNoCursor = slots[cursor];
+
+      /* Uma palavra da tela pode virar várias na fala (código): realça o token inteiro. */
+      if (slotNoCursor && slotNoCursor.chave !== token.chave
+        && slotNoCursor.chave.startsWith(acumulado + token.chave)) {
+        acumulado += token.chave;
+        mapa.push(cursor);
+        if (acumulado === slotNoCursor.chave) {
+          cursor++;
+          acumulado = "";
+        }
+        return;
+      }
+
+      acumulado = "";
+      const limite = Math.min(slots.length, cursor + JANELA_BUSCA);
+      let encontrado = -1;
+
+      for (let indice = cursor; indice < limite; indice++) {
+        if (slots[indice].chave === token.chave) {
+          encontrado = indice;
+          break;
+        }
+      }
+
+      mapa.push(encontrado);
+      if (encontrado >= 0) cursor = encontrado + 1;
+    });
+
+    return { tokens, mapa, cursor };
+  }
+
+  function limparPalavra() {
+    realcePalavra?.clear();
+    elidKaraoke = null;
+  }
+
+  function prepararKaraoke(indice) {
+    if (!SUPORTA_REALCE) return;
+    slotsPalavras = [];
+    tokensSegmento = [];
+    mapaSegmento = [];
+
+    const estado = app.estado;
+    const idElemento = estado.fraseParaElemento[indice];
+    if (idElemento === undefined) return;
+
+    /* O preenchimento continua entre trechos do mesmo bloco e reinicia ao trocar de bloco. */
+    if (idElemento !== elidKaraoke) {
+      limparPalavra();
+      elidKaraoke = idElemento;
+    }
+
+    const elemento = app.elementos["texto-renderizado"].querySelector(`[data-elid="${idElemento}"]`);
+    if (!elemento) return;
+
+    /* Recalculado por trecho: uma marcação de comentário pode ter dividido os nós de texto. */
+    slotsPalavras = mapearPalavrasDoElemento(elemento);
+
+    let cursor = 0;
+    for (let anterior = estado.fraseParaElemento.indexOf(idElemento); anterior < indice; anterior++) {
+      cursor = alinharSegmento(estado.frases[anterior], slotsPalavras, cursor).cursor;
+    }
+
+    const alinhamento = alinharSegmento(estado.frases[indice], slotsPalavras, cursor);
+    tokensSegmento = alinhamento.tokens;
+    mapaSegmento = alinhamento.mapa;
+  }
+
+  function destacarPalavra(posicaoNoTexto) {
+    if (!SUPORTA_REALCE || !tokensSegmento.length || !slotsPalavras.length) return;
+
+    const posicao = Number(posicaoNoTexto) || 0;
+    const indicePalavra = tokensSegmento.findIndex((token) => posicao < token.fim);
+    const slot = indicePalavra >= 0 ? slotsPalavras[mapaSegmento[indicePalavra]] : null;
+
+    /* Sem correspondência, o preenchimento anterior permanece em vez de piscar. */
+    if (!slot) return;
+
+    const primeira = slotsPalavras[0];
+
+    try {
+      const intervalo = document.createRange();
+      intervalo.setStart(primeira.no, primeira.inicio);
+      intervalo.setEnd(slot.no, slot.fim);
+      if (!realcePalavra) {
+        realcePalavra = new global.Highlight();
+        global.CSS.highlights.set(NOME_REALCE, realcePalavra);
+      }
+      realcePalavra.clear();
+      realcePalavra.add(intervalo);
+    } catch (_) {
+      /* O nó pode ter sido substituído; o próximo trecho refaz o mapeamento. */
+      limparPalavra();
+    }
+  }
+
   function atualizarBotaoAcompanhamento() {
     const ativo = app.estado.seguindoLeitura;
     const botao = app.elementos["btn-acompanhar"];
@@ -208,6 +389,10 @@
     let contadorElementos = 0;
     let indiceLinha = 0;
 
+    limparPalavra();
+    slotsPalavras = [];
+    tokensSegmento = [];
+    mapaSegmento = [];
     estado.frases = [];
     estado.fraseParaElemento = [];
     estado.elementosRenderizados = [];
@@ -246,6 +431,34 @@
       if (!linha || /^[-*]{3,}$/.test(linha)) {
         fecharListas();
         indiceLinha++;
+        continue;
+      }
+
+      if (linha.startsWith("```")) {
+        fecharListas();
+        const idioma = linha.slice(3).trim().split(/\s+/)[0] || "";
+        const linhasCodigo = [];
+        indiceLinha++;
+
+        while (indiceLinha < linhas.length && !linhas[indiceLinha].trim().startsWith("```")) {
+          linhasCodigo.push(linhas[indiceLinha]);
+          indiceLinha++;
+        }
+        indiceLinha++;
+
+        while (linhasCodigo.length && !linhasCodigo[linhasCodigo.length - 1].trim()) linhasCodigo.pop();
+        const total = linhasCodigo.length;
+        /* A voz anuncia o bloco; o código fica na tela como referência, recolhido. */
+        const descricao = `Bloco de código${idioma ? ` em ${idioma}` : ""} com ${total} ${total === 1 ? "linha" : "linhas"}`;
+        const idElemento = contadorElementos++;
+        registrarTextoFalado(idElemento, descricao);
+        const escapar = app.modulos.seguranca.escaparHtml;
+        partesHtml.push(
+          `<div data-elid="${idElemento}" class="bloco-codigo">`
+          + `<details><summary>${escapar(descricao)}</summary>`
+          + `<pre><code>${escapar(linhasCodigo.join("\n"))}</code></pre>`
+          + "</details></div>"
+        );
         continue;
       }
 
@@ -323,24 +536,10 @@
     el["entrada-resumo-titulo"].textContent = tituloLeitura;
     el["leitura-titulo"].textContent = tituloLeitura;
 
-    el["texto-renderizado"].querySelectorAll("[data-elid]").forEach((elemento) => {
-      elemento.style.cursor = "pointer";
-      elemento.title = "Clique para ouvir daqui";
-      elemento.addEventListener("click", (evento) => {
-        if (evento.target.closest("mark, .trecho-checkbox")) return;
-        if (el["texto-renderizado"].classList.contains("modo-selecao-trechos")) return;
-        const selecao = global.getSelection();
-        if (selecao && !selecao.isCollapsed) return;
-
-        evento.stopPropagation();
-        const idElemento = Number(elemento.dataset.elid);
-        const fraseAlvo = estado.fraseParaElemento.indexOf(idElemento);
-        definirAcompanhamento(true, false);
-        app.modulos.leitor.tocarDe(fraseAlvo >= 0 ? fraseAlvo : 0);
-      });
-    });
-
     estado.elementosRenderizados = Array.from(el["texto-renderizado"].querySelectorAll("[data-elid]"));
+    estado.elementosRenderizados.forEach((elemento) => {
+      elemento.title = "Clique para ouvir daqui";
+    });
     el["leitor-viewport"].scrollTop = 0;
     definirAcompanhamento(true, false);
 
@@ -370,11 +569,32 @@
 
   function limparDestaque() {
     app.estado.elementosRenderizados.forEach((elemento) => elemento.classList.remove("lendo"));
+    limparPalavra();
   }
 
   function inicializar() {
     prefereMovimentoReduzido = global.matchMedia?.("(prefers-reduced-motion: reduce)").matches || false;
     const viewport = app.elementos["leitor-viewport"];
+
+    /*
+     * Um único ouvinte cobre todos os blocos: uma resposta longa gera centenas deles,
+     * e registrar um por elemento a cada nova leitura não escala.
+     */
+    app.elementos["texto-renderizado"].addEventListener("click", (evento) => {
+      if (evento.target.closest("mark, .trecho-checkbox, a[href], summary")) return;
+      if (app.elementos["texto-renderizado"].classList.contains("modo-selecao-trechos")) return;
+
+      const elemento = evento.target.closest("[data-elid]");
+      if (!elemento) return;
+
+      const selecao = global.getSelection();
+      if (selecao && !selecao.isCollapsed) return;
+
+      evento.stopPropagation();
+      const fraseAlvo = app.estado.fraseParaElemento.indexOf(Number(elemento.dataset.elid));
+      definirAcompanhamento(true, false);
+      app.modulos.leitor.tocarDe(fraseAlvo >= 0 ? fraseAlvo : 0);
+    });
 
     app.elementos["btn-acompanhar"].addEventListener("click", () => {
       definirAcompanhamento(true);
@@ -388,6 +608,8 @@
     viewport.addEventListener("keydown", (evento) => {
       if (!["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(evento.key)) return;
       evento.preventDefault();
+      /* Com o leitor focado estas teclas rolam o texto; não devem acionar os atalhos globais. */
+      evento.stopPropagation();
       definirAcompanhamento(false, false);
 
       const movimentos = {
@@ -409,6 +631,9 @@
     renderizar,
     destacar,
     limparDestaque,
+    prepararKaraoke,
+    destacarPalavra,
+    limparPalavra,
     definirAcompanhamento,
     rolarElementoNoLeitor,
     processarInline,
