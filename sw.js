@@ -7,7 +7,7 @@
  * para que o cache antigo seja descartado.
  */
 
-const VERSAO = "leitor-claude-v1";
+const VERSAO = "leitor-claude-v2";
 
 const ARQUIVOS = [
   "./",
@@ -35,6 +35,7 @@ const ARQUIVOS = [
   "assets/icons/headphones.svg",
   "assets/icons/icon-192.png",
   "assets/icons/icon-leitor-claude.svg",
+  "assets/icons/icon-maskable-192.png",
   "assets/icons/info.svg",
   "assets/icons/logo-leitor-claude.svg",
   "assets/icons/message-plus.svg",
